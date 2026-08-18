@@ -147,3 +147,128 @@ Users can view notifications related to blood donation activities.
                  │       MySQL         │
                  │      Database       │
                  └─────────────────────┘
+
+
+## 🔗 Main APIs
+
+### Users
+
+```text
+POST   /api/users
+GET    /api/users
+GET    /api/users/{id}
+PUT    /api/users/{id}
+```
+
+### Donors
+
+```text
+POST   /api/donors
+GET    /api/donors
+GET    /api/donors/{id}
+GET    /api/donors/search
+```
+
+### Blood Requests
+
+```text
+POST   /api/requests
+GET    /api/requests
+GET    /api/requests/{id}
+GET    /api/requests/pending
+GET    /api/requests/blood-group/{bloodGroup}
+PUT    /api/requests/{id}/status
+```
+
+## ⚙️ Setup
+
+### Backend
+
+```bash
+cd Blood-donor-app-backend
+mvn spring-boot:run
+```
+
+Backend:
+
+```text
+http://localhost:8080
+```
+
+### Frontend
+
+```bash
+cd Blood-donor-app
+npm install
+npm run dev
+```
+
+Frontend:
+
+```text
+http://localhost:5173
+```
+
+## 🗄️ Database
+
+Create the MySQL database:
+
+```sql
+CREATE DATABASE blood_donor_db;
+```
+
+Demo donor and blood request data is available in:
+
+```text
+database/demo-data.sql
+```
+
+## 🔒 Security
+
+Database credentials are stored using environment variables.
+
+```properties
+spring.datasource.url=${DB_URL}
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
+```
+
+Real `.env` files and passwords are excluded from GitHub using `.gitignore`.
+
+## 🎯 Objective
+
+The objective of this project is to provide a simple platform that connects blood donors with people who need blood and makes the donor search and blood request process faster and easier.
+
+## 🚀 Future Enhancements
+
+* GPS-based nearby donor search
+* Email/SMS notifications
+* OTP verification
+* AI-based donor matching
+* Real-time notifications
+* Admin dashboard
+* Mobile application
+* Cloud deployment
+
+## 👨‍💻 Developer
+
+**Bala S**
+
+Computer Science & Engineering
+
+---
+
+⭐ Developed as a full-stack educational prototype.
+
+````
+
+After saving:
+
+```bash
+git add README.md
+git commit -m "Add project README"
+git push
+````
+
+
+
