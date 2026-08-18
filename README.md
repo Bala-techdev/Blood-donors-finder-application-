@@ -256,10 +256,13 @@ The objective of this project is to provide a simple platform that connects bloo
 * Mobile application
 * Cloud deployment
 
-## 👨‍💻 Developer
+## 👨‍💻 Developer's
 
 **Bala S**
-
+**AADESH R S**
+**ARRSHAN J S**
+**ADITH K**
+**DHARSHAN K**
 Computer Science & Engineering
 
 ---
