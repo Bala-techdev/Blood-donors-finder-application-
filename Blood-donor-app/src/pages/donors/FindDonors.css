@@ -1,0 +1,329 @@
+.find-donors-page {
+    min-height: 100vh;
+
+    background: #f8fafc;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.donors-header {
+    background: white;
+
+    border-bottom: 1px solid #eeeeee;
+}
+
+.donors-header-inner {
+    max-width: 1200px;
+
+    margin: auto;
+
+    padding: 25px;
+}
+
+.back-dashboard {
+    color: #6b7280;
+
+    font-size: 13px;
+
+    text-decoration: none;
+}
+
+.back-dashboard:hover {
+    color: #e31e24;
+}
+
+.donors-title {
+    margin-top: 35px;
+
+    text-align: center;
+}
+
+.donors-title span {
+    color: #e31e24;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    letter-spacing: 1px;
+}
+
+.donors-title h1 {
+    margin: 8px 0;
+
+    color: #111827;
+
+    font-size: 38px;
+}
+
+.donors-title p {
+    color: #9ca3af;
+
+    font-size: 14px;
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+.donors-main {
+    max-width: 1150px;
+
+    margin: auto;
+
+    padding: 35px 25px;
+}
+
+
+/* =========================
+   SEARCH
+========================= */
+
+.donor-search {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr auto;
+
+    align-items: end;
+
+    gap: 15px;
+
+    padding: 20px;
+
+    background: white;
+
+    border: 1px solid #eeeeee;
+
+    border-radius: 12px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.04);
+}
+
+.search-field label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #374151;
+
+    font-size: 12px;
+
+    font-weight: 600;
+}
+
+.search-field input,
+.search-field select {
+    width: 100%;
+
+    padding: 12px;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 7px;
+
+    outline: none;
+
+    background: white;
+
+    color: #374151;
+
+    font-size: 13px;
+}
+
+.search-field input:focus,
+.search-field select:focus {
+    border-color: #e31e24;
+
+    box-shadow:
+        0 0 0 3px rgba(227, 30, 36, 0.07);
+}
+
+.search-button {
+    padding: 12px 20px;
+
+    border: none;
+
+    border-radius: 7px;
+
+    background: #e31e24;
+
+    color: white;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+}
+
+.search-button:hover {
+    background: #c9181e;
+}
+
+
+/* =========================
+   RESULTS HEADER
+========================= */
+
+.results-header {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin: 35px 0 20px;
+}
+
+.results-header h2 {
+    margin: 0 0 4px;
+
+    color: #111827;
+
+    font-size: 21px;
+}
+
+.results-header p {
+    margin: 0;
+
+    color: #9ca3af;
+
+    font-size: 12px;
+}
+
+.clear-button {
+    padding: 8px 13px;
+
+    border: 1px solid #eeeeee;
+
+    border-radius: 6px;
+
+    background: white;
+
+    color: #6b7280;
+
+    font-size: 11px;
+
+    cursor: pointer;
+}
+
+
+/* =========================
+   GRID
+========================= */
+
+.donors-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 18px;
+}
+
+
+/* =========================
+   STATES
+========================= */
+
+.donor-loading,
+.donor-error,
+.empty-donors {
+    padding: 60px 20px;
+
+    text-align: center;
+
+    background: white;
+
+    border-radius: 12px;
+
+    border: 1px solid #eeeeee;
+}
+
+.donor-loading {
+    color: #e31e24;
+
+    font-size: 14px;
+}
+
+.donor-error {
+    color: #be123c;
+
+    background: #fff1f2;
+
+    border-color: #fecdd3;
+}
+
+.empty-donors > div {
+    font-size: 40px;
+
+    margin-bottom: 10px;
+}
+
+.empty-donors h3 {
+    color: #374151;
+
+    margin-bottom: 5px;
+}
+
+.empty-donors p {
+    color: #9ca3af;
+
+    font-size: 13px;
+}
+
+
+/* =========================
+   TABLET
+========================= */
+
+@media (max-width: 900px) {
+
+    .donor-search {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .search-button {
+        width: 100%;
+    }
+
+    .donors-grid {
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 600px) {
+
+    .donors-title h1 {
+        font-size: 30px;
+    }
+
+    .donors-main {
+        padding: 25px 15px;
+    }
+
+    .donor-search {
+        grid-template-columns: 1fr;
+    }
+
+    .donors-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .results-header {
+        align-items: flex-start;
+
+        gap: 10px;
+    }
+}

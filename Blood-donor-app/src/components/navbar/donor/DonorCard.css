@@ -1,0 +1,199 @@
+.donor-card {
+    background: #ffffff;
+
+    border: 1px solid #eeeeee;
+
+    border-radius: 14px;
+
+    padding: 20px;
+
+    transition: 0.25s;
+}
+
+.donor-card:hover {
+    transform: translateY(-3px);
+
+    border-color: #ffd1d1;
+
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.07);
+}
+
+
+/* TOP */
+
+.donor-card-top {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+}
+
+.donor-avatar {
+    width: 48px;
+    height: 48px;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: #fff0f0;
+
+    color: #e31e24;
+
+    border-radius: 50%;
+
+    font-size: 18px;
+
+    font-weight: 700;
+}
+
+.donor-main-info {
+    flex: 1;
+}
+
+.donor-main-info h3 {
+    margin: 0 0 3px;
+
+    color: #111827;
+
+    font-size: 15px;
+}
+
+.donor-main-info p {
+    margin: 0;
+
+    color: #9ca3af;
+
+    font-size: 11px;
+}
+
+.available-badge {
+    padding: 5px 8px;
+
+    background: #f0fdf4;
+
+    color: #16a34a;
+
+    border-radius: 20px;
+
+    font-size: 9px;
+
+    font-weight: 700;
+}
+
+
+/* DETAILS */
+
+.donor-details {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 8px;
+
+    margin: 20px 0;
+
+    padding: 15px 0;
+
+    border-top: 1px solid #f1f1f1;
+
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.donor-detail {
+    text-align: center;
+}
+
+.detail-label {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #9ca3af;
+
+    font-size: 10px;
+}
+
+.donor-detail strong {
+    color: #374151;
+
+    font-size: 13px;
+}
+
+.blood-group-badge {
+    display: inline-block;
+
+    padding: 5px 8px;
+
+    background: #fff0f0;
+
+    color: #e31e24 !important;
+
+    border-radius: 6px;
+}
+
+.verified-text {
+    color: #16a34a !important;
+
+    font-size: 11px !important;
+}
+
+
+/* BUTTONS */
+
+.donor-card-bottom {
+    display: flex;
+
+    gap: 8px;
+}
+
+.view-profile-btn,
+.request-donor-btn {
+    flex: 1;
+
+    padding: 10px;
+
+    border-radius: 7px;
+
+    text-align: center;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.view-profile-btn {
+    background: #fff5f5;
+
+    color: #e31e24;
+
+    text-decoration: none;
+
+    border: 1px solid #ffd5d5;
+}
+
+.request-donor-btn {
+    border: none;
+
+    background: #e31e24;
+
+    color: white;
+}
+
+.request-donor-btn:hover {
+    background: #c9181e;
+}
+
+.request-donor-btn {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
