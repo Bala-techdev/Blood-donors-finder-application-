@@ -12,7 +12,7 @@ The application provides a simple platform where users can register, search for 
 
 Watch the complete working demo of the Blood Donor Finder Application:
 
-[▶️ Watch Blood Donor Finder Demo]("C:\Users\Bala\Videos\Screen Recordings\Screen Recording 2026-08-18 182356.mp4")
+[▶️ Watch Blood Donor Finder Demo]()
 
 ## 📌 Project Overview
 
