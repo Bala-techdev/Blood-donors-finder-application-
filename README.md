@@ -265,19 +265,5 @@ The objective of this project is to provide a simple platform that connects bloo
 **DHARSHAN K**
 Computer Science & Engineering
 
----
-
-⭐ Developed as a full-stack educational prototype.
-
-````
-
-After saving:
-
-```bash
-git add README.md
-git commit -m "Add project README"
-git push
-````
-
 
 
