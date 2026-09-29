@@ -52,6 +52,7 @@ function RequestDetails() {
     // ==========================================
 
     const [expandedDonorId, setExpandedDonorId] = useState(null);
+    const [reliabilityLoading, setReliabilityLoading] = useState(false);
 
 
     // ==========================================
@@ -233,49 +234,97 @@ function RequestDetails() {
 
     const findMatchingDonors = async () => {
 
-        if (!bloodRequest) {
-            return;
-        }
+    if (!bloodRequest) {
+        return;
+    }
 
-        try {
+    try {
 
-            setMatchingLoading(true);
+        setMatchingLoading(true);
 
-            setError("");
+        setReliabilityLoading(true);
 
-            const response =
-                await api.post(
-                    "/donors/match",
-                    bloodRequest
-                );
+        setError("");
 
-            console.log(
-                "AI Matching Results:",
-                response.data
+        // ======================================
+        // GET AI MATCHING RESULTS
+        // ======================================
+
+        const response = await api.post(
+            "/donors/match",
+            bloodRequest
+        );
+
+        const matches = response.data || [];
+
+
+        // ======================================
+        // GET RELIABILITY FOR EACH DONOR
+        // ======================================
+
+        const matchesWithReliability =
+            await Promise.all(
+
+                matches.map(async (match) => {
+
+                    try {
+
+                        const reliabilityResponse =
+                            await api.get(
+                                `/request-responses/donor/${match.donor.id}/reliability`
+                            );
+
+                        return {
+                            ...match,
+                            reliability:
+                                reliabilityResponse.data
+                        };
+
+                    } catch (reliabilityError) {
+
+                        console.error(
+                            `Unable to load reliability for donor ${match.donor.id}:`,
+                            reliabilityError
+                        );
+
+                        return {
+                            ...match,
+                            reliability: null
+                        };
+                    }
+                })
             );
 
-            setMatchingDonors(
-                response.data
-            );
 
-        } catch (err) {
+        console.log(
+            "AI Matching + Reliability:",
+            matchesWithReliability
+        );
 
-            console.error(
-                "Matching error:",
-                err
-            );
 
-            setError(
-                "Unable to find matching donors."
-            );
+        setMatchingDonors(
+            matchesWithReliability
+        );
 
-        } finally {
+    } catch (err) {
 
-            setMatchingLoading(false);
+        console.error(
+            "Matching error:",
+            err
+        );
 
-        }
+        setError(
+            "Unable to find matching donors."
+        );
 
-    };
+    } finally {
+
+        setMatchingLoading(false);
+
+        setReliabilityLoading(false);
+
+    }
+};
 
 
     // ==========================================
@@ -1291,6 +1340,193 @@ function RequestDetails() {
                                                                 </strong>
 
                                                             </div>
+                                                            {/* ==================================
+    DONOR RELIABILITY
+================================== */}
+
+{match.reliability && (
+
+    <div className="donor-reliability-section">
+
+        <div className="reliability-header">
+
+            <div>
+
+                <span className="reliability-label">
+
+                    ⭐ DONOR RELIABILITY
+
+                </span>
+
+                <h4>
+
+                    Response Reliability
+
+                </h4>
+
+            </div>
+
+
+            <div
+                className={`reliability-level ${
+                    match.reliability.reliabilityLevel
+                        ?.toLowerCase()
+                }`}
+            >
+
+                {match.reliability.reliabilityLevel}
+
+            </div>
+
+        </div>
+
+
+        {/* SCORE */}
+
+        <div className="reliability-score-container">
+
+            <div>
+
+                <span>
+                    Reliability Score
+                </span>
+
+                <strong>
+
+                    {match.reliability.reliabilityScore?.toFixed(0)}
+
+                    <small>/100</small>
+
+                </strong>
+
+            </div>
+
+
+            <div className="reliability-progress">
+
+                <div
+                    className="reliability-progress-fill"
+
+                    style={{
+                        width: `${
+                            Math.min(
+                                100,
+                                Math.max(
+                                    0,
+                                    match.reliability.reliabilityScore
+                                )
+                            )
+                        }%`
+                    }}
+                />
+
+            </div>
+
+        </div>
+
+
+        {/* STATISTICS */}
+
+        <div className="reliability-stats">
+
+
+            <div className="reliability-stat">
+
+                <span>
+                    Response Rate
+                </span>
+
+                <strong>
+
+                    {match.reliability.responseRate?.toFixed(0)}%
+
+                </strong>
+
+            </div>
+
+
+            <div className="reliability-stat">
+
+                <span>
+                    Acceptance Rate
+                </span>
+
+                <strong>
+
+                    {match.reliability.acceptanceRate?.toFixed(0)}%
+
+                </strong>
+
+            </div>
+
+
+            <div className="reliability-stat">
+
+                <span>
+                    Accepted
+                </span>
+
+                <strong>
+
+                    {match.reliability.acceptedCount}
+
+                </strong>
+
+            </div>
+
+
+            <div className="reliability-stat">
+
+                <span>
+                    Declined
+                </span>
+
+                <strong>
+
+                    {match.reliability.declinedCount}
+
+                </strong>
+
+            </div>
+
+
+            <div className="reliability-stat">
+
+                <span>
+                    Total Responses
+                </span>
+
+                <strong>
+
+                    {match.reliability.respondedCount}
+
+                </strong>
+
+            </div>
+
+
+        </div>
+
+
+        {/* EXPLANATION */}
+
+        <div className="reliability-explanation">
+
+            <span>
+                🧠 Why this reliability score?
+            </span>
+
+            <p>
+
+                {match.reliability.explanation}
+
+            </p>
+
+        </div>
+
+    </div>
+
+)}
 
 
                                                             {/* BLOOD */}

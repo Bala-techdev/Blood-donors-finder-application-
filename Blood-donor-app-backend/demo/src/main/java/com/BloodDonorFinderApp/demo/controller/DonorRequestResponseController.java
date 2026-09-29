@@ -6,7 +6,8 @@ import com.BloodDonorFinderApp.demo.service.DonorRequestResponseService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import com.BloodDonorFinderApp.demo.dto.DonorReliabilityResult;
+import com.BloodDonorFinderApp.demo.service.DonorReliabilityService;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,7 @@ import java.util.Map;
 public class DonorRequestResponseController {
 
     private final DonorRequestResponseService responseService;
+    private final DonorReliabilityService reliabilityService;
 
 
     // ==========================================
@@ -23,9 +25,14 @@ public class DonorRequestResponseController {
     // ==========================================
 
     public DonorRequestResponseController(
-            DonorRequestResponseService responseService
+            DonorRequestResponseService responseService,
+            DonorReliabilityService reliabilityService
     ) {
+
         this.responseService = responseService;
+
+        this.reliabilityService =
+                reliabilityService;
     }
 
 
@@ -184,6 +191,37 @@ public class DonorRequestResponseController {
                     );
 
             return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    e.getMessage()
+                            )
+                    );
+        }
+    }
+
+    // ==========================================
+// DONOR RELIABILITY SCORE
+// ==========================================
+
+    @GetMapping("/donor/{donorId}/reliability")
+    public ResponseEntity<?> getDonorReliability(
+            @PathVariable Long donorId
+    ) {
+
+        try {
+
+            DonorReliabilityResult result =
+                    reliabilityService.calculateReliability(
+                            donorId
+                    );
+
+            return ResponseEntity.ok(result);
 
         } catch (RuntimeException e) {
 
