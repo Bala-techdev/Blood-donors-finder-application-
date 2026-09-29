@@ -17,7 +17,6 @@ public class DonorMatchingService {
     private final DonationEligibilityService
             donationEligibilityService;
 
-
     public DonorMatchingService(
             DonorProfileRepository donorProfileRepository,
             DonationEligibilityService donationEligibilityService
@@ -42,55 +41,49 @@ public class DonorMatchingService {
         List<DonorProfile> donors =
                 donorProfileRepository.findAll();
 
-
         List<DonorMatchResult> matches =
                 new ArrayList<>();
 
 
         for (DonorProfile donor : donors) {
 
-
-            // -------------------------------------------------
-            // 1. CHECK AVAILABILITY
-            // -------------------------------------------------
+            // -----------------------------------------------
+            // 1. AVAILABILITY
+            // -----------------------------------------------
 
             if (!donor.isAvailable()) {
                 continue;
             }
 
 
-            // -------------------------------------------------
-            // 2. CHECK BLOOD COMPATIBILITY
-            // -------------------------------------------------
+            // -----------------------------------------------
+            // 2. BLOOD COMPATIBILITY
+            // -----------------------------------------------
 
             if (!isCompatible(
                     request.getBloodGroup(),
                     donor.getBloodGroup()
             )) {
-
                 continue;
             }
 
 
-            // -------------------------------------------------
-            // 3. CHECK DONATION ELIGIBILITY
-            // -------------------------------------------------
+            // -----------------------------------------------
+            // 3. DONATION ELIGIBILITY
+            // -----------------------------------------------
 
             boolean eligible =
                     donationEligibilityService
                             .isEligible(donor);
-
-
-            // Recently donated donors are not recommended
 
             if (!eligible) {
                 continue;
             }
 
 
-            // -------------------------------------------------
-            // 4. CALCULATE DISTANCE
-            // -------------------------------------------------
+            // -----------------------------------------------
+            // 4. DISTANCE
+            // -----------------------------------------------
 
             double distance =
                     calculateDistance(
@@ -99,21 +92,21 @@ public class DonorMatchingService {
                     );
 
 
-            // -------------------------------------------------
-            // 5. CALCULATE DAYS SINCE LAST DONATION
-            // -------------------------------------------------
+            // -----------------------------------------------
+            // 5. DAYS SINCE LAST DONATION
+            // -----------------------------------------------
 
             long daysSinceLastDonation =
                     donationEligibilityService
                             .getDaysSinceLastDonation(donor);
 
 
-            // -------------------------------------------------
-            // 6. CALCULATE MATCH SCORE
-            // -------------------------------------------------
+            // -----------------------------------------------
+            // 6. CALCULATE EXPLAINABLE SCORE
+            // -----------------------------------------------
 
-            double score =
-                    calculateScore(
+            MatchScoreBreakdown breakdown =
+                    calculateScoreBreakdown(
                             request,
                             donor,
                             distance,
@@ -121,29 +114,29 @@ public class DonorMatchingService {
                     );
 
 
-            // -------------------------------------------------
-            // 7. ADD MATCH RESULT
-            // -------------------------------------------------
+            // -----------------------------------------------
+            // 7. ADD RESULT
+            // -----------------------------------------------
 
             matches.add(
 
                     new DonorMatchResult(
                             donor,
-                            score,
+                            breakdown.getTotalScore(),
                             distance,
                             eligible,
-                            daysSinceLastDonation
+                            daysSinceLastDonation,
+                            breakdown
                     )
             );
         }
 
 
-        // -----------------------------------------------------
+        // -----------------------------------------------
         // HIGHEST SCORE FIRST
-        // -----------------------------------------------------
+        // -----------------------------------------------
 
         matches.sort(
-
                 Comparator.comparingDouble(
                         DonorMatchResult::getScore
                 ).reversed()
@@ -177,81 +170,47 @@ public class DonorMatchingService {
                 donorGroup.trim().toUpperCase();
 
 
-        // Exact blood group match
-
         if (recipientGroup.equals(donorGroup)) {
             return true;
         }
 
 
-        /*
-         * Blood compatibility for red blood cell donation.
-         *
-         * Recipient -> Compatible Donor Groups
-         *
-         * O-  -> O-
-         * O+  -> O+, O-
-         * A-  -> A-, O-
-         * A+  -> A+, A-, O+, O-
-         * B-  -> B-, O-
-         * B+  -> B+, B-, O+, O-
-         * AB- -> AB-, A-, B-, O-
-         * AB+ -> AB+, AB-, A+, A-, B+, B-, O+, O-
-         */
-
-
         switch (recipientGroup) {
 
-
             case "O-":
-
                 return donorGroup.equals("O-");
 
-
             case "O+":
-
                 return donorGroup.equals("O+")
                         || donorGroup.equals("O-");
 
-
             case "A-":
-
                 return donorGroup.equals("A-")
                         || donorGroup.equals("O-");
 
-
             case "A+":
-
                 return donorGroup.equals("A+")
                         || donorGroup.equals("A-")
                         || donorGroup.equals("O+")
                         || donorGroup.equals("O-");
 
-
             case "B-":
-
                 return donorGroup.equals("B-")
                         || donorGroup.equals("O-");
 
-
             case "B+":
-
                 return donorGroup.equals("B+")
                         || donorGroup.equals("B-")
                         || donorGroup.equals("O+")
                         || donorGroup.equals("O-");
 
-
             case "AB-":
-
                 return donorGroup.equals("AB-")
                         || donorGroup.equals("A-")
                         || donorGroup.equals("B-")
                         || donorGroup.equals("O-");
 
-
             case "AB+":
-
                 return donorGroup.equals("AB+")
                         || donorGroup.equals("AB-")
                         || donorGroup.equals("A+")
@@ -261,157 +220,160 @@ public class DonorMatchingService {
                         || donorGroup.equals("O+")
                         || donorGroup.equals("O-");
 
-
             default:
-
                 return false;
         }
     }
 
 
     // =========================================================
-    // INTELLIGENT MATCH SCORE
+    // EXPLAINABLE SCORE BREAKDOWN
     // =========================================================
 
-    private double calculateScore(
+    private MatchScoreBreakdown calculateScoreBreakdown(
             BloodRequest request,
             DonorProfile donor,
             double distance,
             boolean eligible
     ) {
 
-        double score = 0;
+        double compatibilityScore = 0;
+        double availabilityScore = 0;
+        double verificationScore = 0;
+        double experienceScore = 0;
+        double distanceScore = 0;
+        double eligibilityScore = 0;
 
 
-        // -----------------------------------------------------
-        // 1. BLOOD GROUP COMPATIBILITY
-        // Maximum = 40
-        // -----------------------------------------------------
+        // -----------------------------------------------
+        // BLOOD COMPATIBILITY - MAX 40
+        // -----------------------------------------------
 
         if (request.getBloodGroup()
                 .equalsIgnoreCase(
                         donor.getBloodGroup()
                 )) {
 
-            // Exact blood group match
-
-            score += 40;
+            compatibilityScore = 40;
 
         } else {
 
-            // Compatible blood group
-
-            score += 25;
+            compatibilityScore = 25;
         }
 
 
-        // -----------------------------------------------------
-        // 2. AVAILABILITY
-        // Maximum = 10
-        // -----------------------------------------------------
+        // -----------------------------------------------
+        // AVAILABILITY - MAX 10
+        // -----------------------------------------------
 
         if (donor.isAvailable()) {
 
-            score += 10;
+            availabilityScore = 10;
         }
 
 
-        // -----------------------------------------------------
-        // 3. VERIFICATION
-        // Maximum = 10
-        // -----------------------------------------------------
+        // -----------------------------------------------
+        // VERIFICATION - MAX 10
+        // -----------------------------------------------
 
         if (donor.isVerified()) {
 
-            score += 10;
+            verificationScore = 10;
         }
 
 
-        // -----------------------------------------------------
-        // 4. DONATION EXPERIENCE
-        // Maximum = 10
-        // -----------------------------------------------------
+        // -----------------------------------------------
+        // DONATION EXPERIENCE - MAX 10
+        // -----------------------------------------------
 
         if (donor.getTotalDonations() != null) {
 
-
             if (donor.getTotalDonations() >= 5) {
 
-                score += 10;
+                experienceScore = 10;
 
             } else if (
                     donor.getTotalDonations() >= 2
             ) {
 
-                score += 7;
+                experienceScore = 7;
 
             } else {
 
-                score += 4;
+                experienceScore = 4;
             }
         }
 
 
-        // -----------------------------------------------------
-        // 5. LOCATION / DISTANCE
-        // Maximum = 15
-        // -----------------------------------------------------
+        // -----------------------------------------------
+        // DISTANCE - MAX 15
+        // -----------------------------------------------
 
         if (distance <= 5) {
 
-            score += 15;
+            distanceScore = 15;
 
         } else if (distance <= 10) {
 
-            score += 12;
+            distanceScore = 12;
 
         } else if (distance <= 25) {
 
-            score += 9;
+            distanceScore = 9;
 
         } else if (distance <= 50) {
 
-            score += 6;
+            distanceScore = 6;
 
         } else {
 
-            score += 3;
+            distanceScore = 3;
         }
 
 
-        // -----------------------------------------------------
-        // 6. DONATION ELIGIBILITY
-        // Maximum = 15
-        // -----------------------------------------------------
+        // -----------------------------------------------
+        // ELIGIBILITY - MAX 15
+        // -----------------------------------------------
 
         if (eligible) {
 
-            score += 15;
+            eligibilityScore = 15;
         }
 
 
-        // -----------------------------------------------------
-        // MAXIMUM SCORE = 100
-        // -----------------------------------------------------
+        double totalScore =
+                compatibilityScore
+                        + availabilityScore
+                        + verificationScore
+                        + experienceScore
+                        + distanceScore
+                        + eligibilityScore;
 
-        return Math.min(score, 100);
+
+        totalScore =
+                Math.min(totalScore, 100);
+
+
+        return new MatchScoreBreakdown(
+                compatibilityScore,
+                availabilityScore,
+                verificationScore,
+                experienceScore,
+                distanceScore,
+                eligibilityScore,
+                totalScore
+        );
     }
 
 
     // =========================================================
-    // HAVERSINE DISTANCE CALCULATION
+    // HAVERSINE DISTANCE
     // =========================================================
 
     private double calculateDistance(
             BloodRequest request,
             DonorProfile donor
     ) {
-
-
-        /*
-         * If coordinates are unavailable,
-         * return a large distance.
-         */
 
         if (request.getLatitude() == null ||
                 request.getLongitude() == null ||
@@ -422,12 +384,8 @@ public class DonorMatchingService {
         }
 
 
-        // Earth's radius in kilometres
-
         final double EARTH_RADIUS = 6371.0;
 
-
-        // Request coordinates
 
         double requestLatitude =
                 Math.toRadians(
@@ -440,8 +398,6 @@ public class DonorMatchingService {
                 );
 
 
-        // Donor coordinates
-
         double donorLatitude =
                 Math.toRadians(
                         donor.getLatitude()
@@ -453,16 +409,12 @@ public class DonorMatchingService {
                 );
 
 
-        // Difference between coordinates
-
         double latitudeDifference =
                 donorLatitude - requestLatitude;
 
         double longitudeDifference =
                 donorLongitude - requestLongitude;
 
-
-        // Haversine formula
 
         double a =
                 Math.sin(latitudeDifference / 2)
@@ -490,11 +442,146 @@ public class DonorMatchingService {
                 EARTH_RADIUS * c;
 
 
-        // Round to 2 decimal places
-
         return Math.round(
                 distance * 100.0
         ) / 100.0;
+    }
+
+
+    // =========================================================
+    // MATCH SCORE BREAKDOWN
+    // =========================================================
+
+    public static class MatchScoreBreakdown {
+
+        private double compatibilityScore;
+        private double availabilityScore;
+        private double verificationScore;
+        private double experienceScore;
+        private double distanceScore;
+        private double eligibilityScore;
+        private double totalScore;
+
+
+        public MatchScoreBreakdown() {
+        }
+
+
+        public MatchScoreBreakdown(
+                double compatibilityScore,
+                double availabilityScore,
+                double verificationScore,
+                double experienceScore,
+                double distanceScore,
+                double eligibilityScore,
+                double totalScore
+        ) {
+
+            this.compatibilityScore =
+                    compatibilityScore;
+
+            this.availabilityScore =
+                    availabilityScore;
+
+            this.verificationScore =
+                    verificationScore;
+
+            this.experienceScore =
+                    experienceScore;
+
+            this.distanceScore =
+                    distanceScore;
+
+            this.eligibilityScore =
+                    eligibilityScore;
+
+            this.totalScore =
+                    totalScore;
+        }
+
+
+        public double getCompatibilityScore() {
+            return compatibilityScore;
+        }
+
+        public void setCompatibilityScore(
+                double compatibilityScore
+        ) {
+            this.compatibilityScore =
+                    compatibilityScore;
+        }
+
+
+        public double getAvailabilityScore() {
+            return availabilityScore;
+        }
+
+        public void setAvailabilityScore(
+                double availabilityScore
+        ) {
+            this.availabilityScore =
+                    availabilityScore;
+        }
+
+
+        public double getVerificationScore() {
+            return verificationScore;
+        }
+
+        public void setVerificationScore(
+                double verificationScore
+        ) {
+            this.verificationScore =
+                    verificationScore;
+        }
+
+
+        public double getExperienceScore() {
+            return experienceScore;
+        }
+
+        public void setExperienceScore(
+                double experienceScore
+        ) {
+            this.experienceScore =
+                    experienceScore;
+        }
+
+
+        public double getDistanceScore() {
+            return distanceScore;
+        }
+
+        public void setDistanceScore(
+                double distanceScore
+        ) {
+            this.distanceScore =
+                    distanceScore;
+        }
+
+
+        public double getEligibilityScore() {
+            return eligibilityScore;
+        }
+
+        public void setEligibilityScore(
+                double eligibilityScore
+        ) {
+            this.eligibilityScore =
+                    eligibilityScore;
+        }
+
+
+        public double getTotalScore() {
+            return totalScore;
+        }
+
+        public void setTotalScore(
+                double totalScore
+        ) {
+            this.totalScore =
+                    totalScore;
+        }
     }
 
 
@@ -503,7 +590,6 @@ public class DonorMatchingService {
     // =========================================================
 
     public static class DonorMatchResult {
-
 
         private DonorProfile donor;
 
@@ -515,6 +601,8 @@ public class DonorMatchingService {
 
         private long daysSinceLastDonation;
 
+        private MatchScoreBreakdown scoreBreakdown;
+
 
         public DonorMatchResult() {
         }
@@ -525,7 +613,8 @@ public class DonorMatchingService {
                 double score,
                 double distance,
                 boolean eligible,
-                long daysSinceLastDonation
+                long daysSinceLastDonation,
+                MatchScoreBreakdown scoreBreakdown
         ) {
 
             this.donor = donor;
@@ -538,11 +627,13 @@ public class DonorMatchingService {
 
             this.daysSinceLastDonation =
                     daysSinceLastDonation;
+
+            this.scoreBreakdown =
+                    scoreBreakdown;
         }
 
 
         public DonorProfile getDonor() {
-
             return donor;
         }
 
@@ -550,13 +641,11 @@ public class DonorMatchingService {
         public void setDonor(
                 DonorProfile donor
         ) {
-
             this.donor = donor;
         }
 
 
         public double getScore() {
-
             return score;
         }
 
@@ -564,13 +653,11 @@ public class DonorMatchingService {
         public void setScore(
                 double score
         ) {
-
             this.score = score;
         }
 
 
         public double getDistance() {
-
             return distance;
         }
 
@@ -578,13 +665,11 @@ public class DonorMatchingService {
         public void setDistance(
                 double distance
         ) {
-
             this.distance = distance;
         }
 
 
         public boolean isEligible() {
-
             return eligible;
         }
 
@@ -592,13 +677,11 @@ public class DonorMatchingService {
         public void setEligible(
                 boolean eligible
         ) {
-
             this.eligible = eligible;
         }
 
 
         public long getDaysSinceLastDonation() {
-
             return daysSinceLastDonation;
         }
 
@@ -606,9 +689,21 @@ public class DonorMatchingService {
         public void setDaysSinceLastDonation(
                 long daysSinceLastDonation
         ) {
-
             this.daysSinceLastDonation =
                     daysSinceLastDonation;
+        }
+
+
+        public MatchScoreBreakdown getScoreBreakdown() {
+            return scoreBreakdown;
+        }
+
+
+        public void setScoreBreakdown(
+                MatchScoreBreakdown scoreBreakdown
+        ) {
+            this.scoreBreakdown =
+                    scoreBreakdown;
         }
     }
 }

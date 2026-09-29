@@ -2,6 +2,7 @@ package com.BloodDonorFinderApp.demo.controller;
 
 import com.BloodDonorFinderApp.demo.entity.BloodRequest;
 import com.BloodDonorFinderApp.demo.service.BloodRequestService;
+import com.BloodDonorFinderApp.demo.service.EmergencyPriorityService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,13 +15,14 @@ import java.util.List;
 public class BloodRequestController {
 
     private final BloodRequestService bloodRequestService;
-
+    private final EmergencyPriorityService emergencyPriorityService;
     public BloodRequestController(
-            BloodRequestService bloodRequestService
+            BloodRequestService bloodRequestService,
+            EmergencyPriorityService emergencyPriorityService
     ) {
         this.bloodRequestService = bloodRequestService;
+        this.emergencyPriorityService = emergencyPriorityService;
     }
-
     @PostMapping
     public ResponseEntity<BloodRequest> createRequest(
             @RequestBody BloodRequest request
@@ -94,5 +96,28 @@ public class BloodRequestController {
                         status
                 )
         );
+    }
+
+    @GetMapping("/{id}/priority")
+    public ResponseEntity<?> getEmergencyPriority(
+            @PathVariable Long id
+    ) {
+
+        try {
+
+            return ResponseEntity.ok(
+                    emergencyPriorityService.calculatePriority(id)
+            );
+
+        } catch (RuntimeException e) {
+
+            return ResponseEntity.badRequest()
+                    .body(
+                            java.util.Map.of(
+                                    "message",
+                                    e.getMessage()
+                            )
+                    );
+        }
     }
 }

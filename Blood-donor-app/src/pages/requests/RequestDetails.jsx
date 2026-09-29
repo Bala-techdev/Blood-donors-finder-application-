@@ -5,61 +5,57 @@ import "./RequestDetails.css";
 
 function RequestDetails() {
 
-    // ==========================================
-    // GET REQUEST ID FROM URL
-    // ==========================================
-
     const { id } = useParams();
-
 
     // ==========================================
     // STATES
     // ==========================================
 
-    const [bloodRequest, setBloodRequest] =
-        useState(null);
+    const [bloodRequest, setBloodRequest] = useState(null);
 
-    const [matchingDonors, setMatchingDonors] =
-        useState([]);
+    const [matchingDonors, setMatchingDonors] = useState([]);
 
-    const [loading, setLoading] =
-        useState(true);
+    const [loading, setLoading] = useState(true);
 
-    const [matchingLoading, setMatchingLoading] =
-        useState(false);
+    const [matchingLoading, setMatchingLoading] = useState(false);
 
-    const [error, setError] =
-        useState("");
+    const [error, setError] = useState("");
 
-    const [notifyingDonorId, setNotifyingDonorId] =
-        useState(null);
+    const [notifyingDonorId, setNotifyingDonorId] = useState(null);
 
-    const [notificationMessage, setNotificationMessage] =
-        useState("");
+    const [notificationMessage, setNotificationMessage] = useState("");
 
-    const [helpLoading, setHelpLoading] =
-        useState(false);
+    const [helpLoading, setHelpLoading] = useState(false);
 
-    const [helpMessage, setHelpMessage] =
-        useState("");
+    const [helpMessage, setHelpMessage] = useState("");
+
+    // ==========================================
+    // EMERGENCY PRIORITY
+    // ==========================================
+
+    const [priorityData, setPriorityData] = useState(null);
+
+    const [priorityLoading, setPriorityLoading] = useState(false);
+
+    // ==========================================
+    // LOGGED-IN USER
+    // ==========================================
+
+    const [loggedInUser, setLoggedInUser] = useState(null);
+
+    const [isDonor, setIsDonor] = useState(false);
+
+    const [userLoading, setUserLoading] = useState(true);
+
+    // ==========================================
+    // EXPLANATION EXPANSION
+    // ==========================================
+
+    const [expandedDonorId, setExpandedDonorId] = useState(null);
 
 
     // ==========================================
-    // LOGGED-IN USER STATES
-    // ==========================================
-
-    const [loggedInUser, setLoggedInUser] =
-        useState(null);
-
-    const [isDonor, setIsDonor] =
-        useState(false);
-
-    const [userLoading, setUserLoading] =
-        useState(true);
-
-
-    // ==========================================
-    // LOAD DATA
+    // LOAD PAGE
     // ==========================================
 
     useEffect(() => {
@@ -70,7 +66,7 @@ function RequestDetails() {
 
 
     // ==========================================
-    // LOAD REQUEST + CHECK USER
+    // LOAD REQUEST + USER + PRIORITY
     // ==========================================
 
     const loadPageData = async () => {
@@ -81,29 +77,25 @@ function RequestDetails() {
 
             setUserLoading(true);
 
-            setError("");
+            setPriorityLoading(true);
 
+            setError("");
 
             // ======================================
             // GET LOGGED-IN USER
             // ======================================
 
             const storedUser =
-                localStorage.getItem(
-                    "bloodDonorUser"
-                );
-
+                localStorage.getItem("bloodDonorUser");
 
             if (storedUser) {
 
-                const user =
-                    JSON.parse(storedUser);
+                const user = JSON.parse(storedUser);
 
                 setLoggedInUser(user);
 
-
                 // ==================================
-                // CHECK IF USER HAS DONOR PROFILE
+                // CHECK DONOR PROFILE
                 // ==================================
 
                 try {
@@ -121,8 +113,6 @@ function RequestDetails() {
 
                 } catch (donorError) {
 
-                    // 404 means user is not a donor
-
                     if (
                         donorError.response?.status === 404
                     ) {
@@ -137,7 +127,6 @@ function RequestDetails() {
                         );
 
                     }
-
                 }
 
             } else {
@@ -158,10 +147,34 @@ function RequestDetails() {
                     `/requests/${id}`
                 );
 
-            setBloodRequest(
-                response.data
-            );
+            setBloodRequest(response.data);
 
+
+            // ======================================
+            // GET EMERGENCY PRIORITY
+            // ======================================
+
+            try {
+
+                const priorityResponse =
+                    await api.get(
+                        `/requests/${id}/priority`
+                    );
+
+                setPriorityData(
+                    priorityResponse.data
+                );
+
+            } catch (priorityError) {
+
+                console.error(
+                    "Error loading emergency priority:",
+                    priorityError
+                );
+
+                setPriorityData(null);
+
+            }
 
         } catch (err) {
 
@@ -180,13 +193,15 @@ function RequestDetails() {
 
             setUserLoading(false);
 
+            setPriorityLoading(false);
+
         }
 
     };
 
 
     // ==========================================
-    // CHECK IF LOGGED-IN USER IS REQUESTER
+    // CHECK REQUESTER
     // ==========================================
 
     const isRequester =
@@ -194,6 +209,22 @@ function RequestDetails() {
         bloodRequest &&
         bloodRequest.requester?.id ===
         loggedInUser.id;
+
+
+    // ==========================================
+    // PRIORITY CLASS
+    // ==========================================
+
+    const getPriorityClass = () => {
+
+        if (!priorityData?.priorityLevel) {
+            return "";
+        }
+
+        return priorityData.priorityLevel
+            .toLowerCase();
+
+    };
 
 
     // ==========================================
@@ -212,10 +243,11 @@ function RequestDetails() {
 
             setError("");
 
-            const response = await api.post(
-                "/donors/match",
-                bloodRequest
-            );
+            const response =
+                await api.post(
+                    "/donors/match",
+                    bloodRequest
+                );
 
             console.log(
                 "AI Matching Results:",
@@ -247,7 +279,26 @@ function RequestDetails() {
 
 
     // ==========================================
-    // NOTIFY RECOMMENDED DONOR
+    // TOGGLE EXPLANATION
+    // ==========================================
+
+    const toggleExplanation = (donorId) => {
+
+        if (expandedDonorId === donorId) {
+
+            setExpandedDonorId(null);
+
+        } else {
+
+            setExpandedDonorId(donorId);
+
+        }
+
+    };
+
+
+    // ==========================================
+    // NOTIFY DONOR
     // ==========================================
 
     const notifyDonor = async (match) => {
@@ -261,7 +312,6 @@ function RequestDetails() {
             setNotificationMessage("");
 
             setError("");
-
 
             await api.post(
 
@@ -283,13 +333,11 @@ function RequestDetails() {
 
             );
 
-
             setNotificationMessage(
 
                 `${match.donor.user?.name || "Donor"} has been notified successfully!`
 
             );
-
 
         } catch (err) {
 
@@ -301,7 +349,6 @@ function RequestDetails() {
             setError(
 
                 err.response?.data?.message ||
-
                 "Unable to notify donor."
 
             );
@@ -330,9 +377,7 @@ function RequestDetails() {
             setError("");
 
 
-            // ======================================
             // LOGIN CHECK
-            // ======================================
 
             if (!loggedInUser) {
 
@@ -345,9 +390,7 @@ function RequestDetails() {
             }
 
 
-            // ======================================
             // DONOR CHECK
-            // ======================================
 
             if (!isDonor) {
 
@@ -360,9 +403,7 @@ function RequestDetails() {
             }
 
 
-            // ======================================
-            // PREVENT REQUESTER
-            // ======================================
+            // REQUESTER CHECK
 
             if (isRequester) {
 
@@ -375,9 +416,7 @@ function RequestDetails() {
             }
 
 
-            // ======================================
-            // CHECK REQUEST STATUS
-            // ======================================
+            // STATUS CHECK
 
             if (
                 bloodRequest.status !== "PENDING"
@@ -392,9 +431,7 @@ function RequestDetails() {
             }
 
 
-            // ======================================
-            // CALL BACKEND API
-            // ======================================
+            // API
 
             await api.post(
 
@@ -403,16 +440,11 @@ function RequestDetails() {
             );
 
 
-            // ======================================
-            // SUCCESS
-            // ======================================
-
             setHelpMessage(
 
                 "Thank you! You have accepted this blood request. ❤️"
 
             );
-
 
         } catch (err) {
 
@@ -424,7 +456,6 @@ function RequestDetails() {
             setError(
 
                 err.response?.data?.message ||
-
                 "Unable to respond to this blood request."
 
             );
@@ -530,7 +561,7 @@ function RequestDetails() {
                     <p>
 
                         View blood request details and
-                        available donor actions.
+                        intelligent donor recommendations.
 
                     </p>
 
@@ -540,7 +571,7 @@ function RequestDetails() {
 
 
             {/* ======================================
-                ERROR MESSAGE
+                ERROR
             ====================================== */}
 
             {error && (
@@ -555,7 +586,7 @@ function RequestDetails() {
 
 
             {/* ======================================
-                NOTIFICATION SUCCESS MESSAGE
+                SUCCESS
             ====================================== */}
 
             {notificationMessage && (
@@ -568,10 +599,6 @@ function RequestDetails() {
 
             )}
 
-
-            {/* ======================================
-                DONOR HELP SUCCESS MESSAGE
-            ====================================== */}
 
             {helpMessage && (
 
@@ -786,11 +813,8 @@ function RequestDetails() {
                             onClick={handleCanHelp}
 
                             disabled={
-
                                 helpLoading ||
-
                                 bloodRequest.status !== "PENDING"
-
                             }
                         >
 
@@ -800,24 +824,145 @@ function RequestDetails() {
 
                         </button>
 
-
                     </div>
 
                 )}
-
 
             </section>
 
 
             {/* ======================================
-                AI MATCHING SECTION
-                ONLY REQUESTER CAN SEE
+                EMERGENCY INTELLIGENCE
+            ====================================== */}
+
+            {priorityLoading && (
+
+                <section className="emergency-priority-loading">
+
+                    <div className="priority-loading-icon">
+
+                        🤖
+
+                    </div>
+
+                    <div>
+
+                        <strong>
+
+                            Calculating emergency priority...
+
+                        </strong>
+
+                        <p>
+
+                            Analyzing urgency, required date,
+                            and blood unit requirements.
+
+                        </p>
+
+                    </div>
+
+                </section>
+
+            )}
+
+
+            {priorityData && !priorityLoading && (
+
+                <section
+                    className={`emergency-priority-card ${getPriorityClass()}`}
+                >
+
+                    <div className="priority-header">
+
+                        <div>
+
+                            <span className="priority-label">
+
+                                🚨 EMERGENCY INTELLIGENCE
+
+                            </span>
+
+                            <h2>
+
+                                Emergency Priority Assessment
+
+                            </h2>
+
+                            <p>
+
+                                System-generated priority based on
+                                the urgency and requirements of this request.
+
+                            </p>
+
+                        </div>
+
+
+                        <div className="priority-level">
+
+                            {priorityData.priorityLevel}
+
+                        </div>
+
+                    </div>
+
+
+                    <div className="priority-content">
+
+                        <div className="priority-score">
+
+                            <span>
+
+                                Priority Score
+
+                            </span>
+
+                            <strong>
+
+                                {priorityData.priorityScore?.toFixed(0)}
+
+                                <small>/100</small>
+
+                            </strong>
+
+                        </div>
+
+
+                        <div className="priority-reason">
+
+                            <span>
+
+                                Why this request received this priority
+
+                            </span>
+
+                            <p>
+
+                                {priorityData.reason}
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            )}
+
+
+            {/* ======================================
+                AI MATCHING
+                REQUESTER ONLY
             ====================================== */}
 
             {isRequester && (
 
                 <section className="ai-matching-section">
 
+
+                    {/* AI HEADER */}
 
                     <div className="ai-section-header">
 
@@ -840,9 +985,10 @@ function RequestDetails() {
 
                             <p>
 
-                                Our intelligent matching system ranks
-                                suitable donors based on compatibility,
-                                availability, eligibility, and distance.
+                                Donors are ranked using blood
+                                compatibility, availability,
+                                verification, donation experience,
+                                distance, and eligibility.
 
                             </p>
 
@@ -867,45 +1013,48 @@ function RequestDetails() {
 
                         </button>
 
-
                     </div>
 
 
-                    {/* NO RESULTS */}
+                    {/* ==================================
+                        NO RESULTS
+                    ================================== */}
 
                     {matchingDonors.length === 0 &&
                         !matchingLoading && (
 
-                            <div className="no-matching-results">
+                        <div className="no-matching-results">
 
-                                <div className="ai-icon">
+                            <div className="ai-icon">
 
-                                    🤖
-
-                                </div>
-
-
-                                <h3>
-
-                                    Find Intelligent Matches
-
-                                </h3>
-
-
-                                <p>
-
-                                    Click "Find Best Donors"
-                                    to analyze and rank
-                                    available blood donors.
-
-                                </p>
+                                🤖
 
                             </div>
 
-                        )}
+
+                            <h3>
+
+                                Find Intelligent Matches
+
+                            </h3>
 
 
-                    {/* MATCHING DONORS */}
+                            <p>
+
+                                Click "Find Best Donors"
+                                to analyze and rank
+                                available blood donors.
+
+                            </p>
+
+                        </div>
+
+                    )}
+
+
+                    {/* ==================================
+                        MATCHING DONORS
+                    ================================== */}
 
                     {matchingDonors.length > 0 && (
 
@@ -913,194 +1062,438 @@ function RequestDetails() {
 
 
                             {matchingDonors.map(
-                                (match, index) => (
+                                (match, index) => {
 
-                                    <div
-                                        className="matching-donor-card"
+                                    const breakdown =
+                                        match.scoreBreakdown;
 
-                                        key={match.donor.id}
-                                    >
+                                    const donorId =
+                                        match.donor.id;
 
-
-                                        <div className="donor-rank">
-
-                                            #{index + 1}
-
-                                        </div>
+                                    const isExpanded =
+                                        expandedDonorId === donorId;
 
 
-                                        {/* DONOR INFO */}
+                                    return (
 
-                                        <div className="matching-donor-info">
+                                        <div
+                                            className="matching-donor-card"
+                                            key={donorId}
+                                        >
 
 
-                                            <div className="donor-avatar">
+                                            {/* RANK */}
 
-                                                {match.donor.user?.name
-                                                    ?.charAt(0)
-                                                    ?.toUpperCase()
-                                                    || "D"}
+                                            <div className="donor-rank">
+
+                                                #{index + 1}
 
                                             </div>
 
 
-                                            <div>
+                                            {/* DONOR INFO */}
 
-                                                <h3>
-
-                                                    {match.donor.user?.name ||
-                                                        "Unknown Donor"}
-
-                                                </h3>
+                                            <div className="matching-donor-info">
 
 
-                                                <p>
+                                                <div className="donor-avatar">
 
-                                                    🩸 {match.donor.bloodGroup}
+                                                    {match.donor.user?.name
+                                                        ?.charAt(0)
+                                                        ?.toUpperCase()
+                                                        || "D"}
 
-                                                    {" • "}
+                                                </div>
 
-                                                    📍 {match.donor.location}
 
-                                                </p>
+                                                <div>
+
+                                                    <h3>
+
+                                                        {match.donor.user?.name ||
+                                                            "Unknown Donor"}
+
+                                                    </h3>
+
+
+                                                    <p>
+
+                                                        🩸 {match.donor.bloodGroup}
+
+                                                        {" • "}
+
+                                                        📍 {match.donor.location}
+
+                                                    </p>
+
+                                                </div>
 
                                             </div>
 
 
-                                        </div>
+                                            {/* ==================================
+                                                SCORE
+                                            ================================== */}
 
+                                            <div className="match-score-box">
 
-                                        {/* MATCH SCORE */}
+                                                <span>
 
-                                        <div className="match-score-box">
-
-                                            <span>
-
-                                                AI MATCH SCORE
-
-                                            </span>
-
-                                            <strong>
-
-                                                {match.score?.toFixed(1)}%
-
-                                            </strong>
-
-                                        </div>
-
-
-                                        {/* DISTANCE */}
-
-                                        <div className="match-distance">
-
-                                            <span>
-
-                                                📍 Distance
-
-                                            </span>
-
-                                            <strong>
-
-                                                {match.distance?.toFixed(2)} KM
-
-                                            </strong>
-
-                                        </div>
-
-
-                                        {/* ELIGIBILITY */}
-
-                                        <div className="match-eligibility">
-
-                                            {match.eligible ? (
-
-                                                <span className="eligible">
-
-                                                    ✅ Eligible
+                                                    AI MATCH SCORE
 
                                                 </span>
 
-                                            ) : (
+                                                <strong>
 
-                                                <span className="not-eligible">
+                                                    {match.score?.toFixed(0)}%
 
-                                                    ❌ Not Eligible
+                                                </strong>
+
+                                            </div>
+
+
+                                            {/* DISTANCE */}
+
+                                            <div className="match-distance">
+
+                                                <span>
+
+                                                    📍 Distance
 
                                                 </span>
+
+                                                <strong>
+
+                                                    {match.distance >= 999
+
+                                                        ? "Location unavailable"
+
+                                                        : `${match.distance?.toFixed(2)} KM`
+
+                                                    }
+
+                                                </strong>
+
+                                            </div>
+
+
+                                            {/* ELIGIBILITY */}
+
+                                            <div className="match-eligibility">
+
+                                                {match.eligible ? (
+
+                                                    <span className="eligible">
+
+                                                        ✅ Eligible
+
+                                                    </span>
+
+                                                ) : (
+
+                                                    <span className="not-eligible">
+
+                                                        ❌ Not Eligible
+
+                                                    </span>
+
+                                                )}
+
+                                            </div>
+
+
+                                            {/* DONATION DAYS */}
+
+                                            <div className="donation-days">
+
+                                                <span>
+
+                                                    Last Donation
+
+                                                </span>
+
+                                                <strong>
+
+                                                    {match.daysSinceLastDonation}
+
+                                                    {" "}days ago
+
+                                                </strong>
+
+                                            </div>
+
+
+                                            {/* ==================================
+                                                WHY THIS DONOR
+                                            ================================== */}
+
+                                            {breakdown && (
+
+                                                <div className="explainable-match-section">
+
+
+                                                    <button
+                                                        className="explain-match-button"
+
+                                                        onClick={() =>
+                                                            toggleExplanation(
+                                                                donorId
+                                                            )
+                                                        }
+                                                    >
+
+                                                        <span>
+
+                                                            🧠 Why this donor?
+
+                                                        </span>
+
+                                                        <span>
+
+                                                            {isExpanded
+                                                                ? "▲"
+                                                                : "▼"}
+
+                                                        </span>
+
+                                                    </button>
+
+
+                                                    {isExpanded && (
+
+                                                        <div className="match-breakdown">
+
+
+                                                            <div className="breakdown-header">
+
+                                                                <div>
+
+                                                                    <span>
+
+                                                                        EXPLAINABLE AI
+
+                                                                    </span>
+
+                                                                    <h4>
+
+                                                                        Match Score Breakdown
+
+                                                                    </h4>
+
+                                                                </div>
+
+
+                                                                <strong>
+
+                                                                    {breakdown.totalScore?.toFixed(0)}
+                                                                    /100
+
+                                                                </strong>
+
+                                                            </div>
+
+
+                                                            {/* BLOOD */}
+
+                                                            <ScoreRow
+                                                                icon="🩸"
+                                                                label="Blood Compatibility"
+                                                                score={breakdown.compatibilityScore}
+                                                                max={40}
+                                                            />
+
+
+                                                            {/* AVAILABILITY */}
+
+                                                            <ScoreRow
+                                                                icon="🟢"
+                                                                label="Availability"
+                                                                score={breakdown.availabilityScore}
+                                                                max={10}
+                                                            />
+
+
+                                                            {/* VERIFICATION */}
+
+                                                            <ScoreRow
+                                                                icon="✅"
+                                                                label="Verification"
+                                                                score={breakdown.verificationScore}
+                                                                max={10}
+                                                            />
+
+
+                                                            {/* EXPERIENCE */}
+
+                                                            <ScoreRow
+                                                                icon="🏆"
+                                                                label="Donation Experience"
+                                                                score={breakdown.experienceScore}
+                                                                max={10}
+                                                            />
+
+
+                                                            {/* DISTANCE */}
+
+                                                            <ScoreRow
+                                                                icon="📍"
+                                                                label="Location / Distance"
+                                                                score={breakdown.distanceScore}
+                                                                max={15}
+                                                            />
+
+
+                                                            {/* ELIGIBILITY */}
+
+                                                            <ScoreRow
+                                                                icon="🩺"
+                                                                label="Donation Eligibility"
+                                                                score={breakdown.eligibilityScore}
+                                                                max={15}
+                                                            />
+
+
+                                                            <div className="breakdown-total">
+
+                                                                <span>
+
+                                                                    AI MATCH SCORE
+
+                                                                </span>
+
+                                                                <strong>
+
+                                                                    {breakdown.totalScore?.toFixed(0)}
+                                                                    /100
+
+                                                                </strong>
+
+                                                            </div>
+
+                                                        </div>
+
+                                                    )}
+
+                                                </div>
 
                                             )}
 
+
+                                            {/* NOTIFY */}
+
+                                            <button
+                                                className="notify-donor-button"
+
+                                                onClick={() =>
+                                                    notifyDonor(match)
+                                                }
+
+                                                disabled={
+                                                    notifyingDonorId ===
+                                                    donorId
+                                                }
+                                            >
+
+                                                {notifyingDonorId ===
+                                                    donorId
+
+                                                    ? "Sending..."
+
+                                                    : "🚨 Notify Donor"
+
+                                                }
+
+                                            </button>
+
+
                                         </div>
 
+                                    );
 
-                                        {/* DONATION DAYS */}
-
-                                        <div className="donation-days">
-
-                                            <span>
-
-                                                Last Donation
-
-                                            </span>
-
-                                            <strong>
-
-                                                {match.daysSinceLastDonation}
-                                                {" "} days ago
-
-                                            </strong>
-
-                                        </div>
-
-
-                                        {/* NOTIFY DONOR */}
-
-                                        <button
-                                            className="notify-donor-button"
-
-                                            onClick={() =>
-                                                notifyDonor(match)
-                                            }
-
-                                            disabled={
-                                                notifyingDonorId ===
-                                                match.donor.id
-                                            }
-                                        >
-
-                                            {notifyingDonorId ===
-                                                match.donor.id
-
-                                                ? "Sending..."
-
-                                                : "🚨 Notify Donor"
-
-                                            }
-
-                                        </button>
-
-
-                                    </div>
-
-                                )
+                                }
 
                             )}
-
 
                         </div>
 
                     )}
 
-
                 </section>
 
             )}
-
 
         </div>
 
     );
 
 }
+
+
+// ==========================================
+// SCORE ROW COMPONENT
+// ==========================================
+
+function ScoreRow({
+    icon,
+    label,
+    score,
+    max
+}) {
+
+    const safeScore =
+        Number(score || 0);
+
+    const safeMax =
+        Number(max || 1);
+
+    const percentage =
+        Math.min(
+            100,
+            Math.max(
+                0,
+                (safeScore / safeMax) * 100
+            )
+        );
+
+
+    return (
+
+        <div className="score-breakdown-row">
+
+            <div className="score-row-top">
+
+                <span className="score-row-label">
+
+                    {icon} {label}
+
+                </span>
+
+                <strong>
+
+                    {safeScore.toFixed(0)}/{safeMax}
+
+                </strong>
+
+            </div>
+
+
+            <div className="score-progress">
+
+                <div
+                    className="score-progress-fill"
+
+                    style={{
+                        width: `${percentage}%`
+                    }}
+                />
+
+            </div>
+
+        </div>
+
+    );
+
+}
+
 
 export default RequestDetails;
