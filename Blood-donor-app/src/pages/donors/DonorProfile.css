@@ -1,0 +1,506 @@
+.donor-profile-page {
+    min-height: 100vh;
+    background: #f8fafc;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.profile-header {
+    background: #ffffff;
+    border-bottom: 1px solid #eeeeee;
+
+    padding: 22px 30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.profile-back {
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.profile-back:hover {
+    color: #e31e24;
+}
+
+.profile-header > span {
+    color: #e31e24;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+.profile-main {
+    max-width: 1000px;
+    margin: auto;
+
+    padding: 40px 25px;
+}
+
+
+/* =========================
+   PROFILE CARD
+========================= */
+
+.profile-card {
+    background: #ffffff;
+
+    border: 1px solid #eeeeee;
+    border-radius: 16px;
+
+    padding: 30px;
+
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+.profile-top {
+    display: flex;
+    align-items: center;
+
+    gap: 18px;
+}
+
+.profile-avatar {
+    width: 85px;
+    height: 85px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #fff0f0;
+    color: #e31e24;
+
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.profile-name {
+    flex: 1;
+}
+
+.profile-name h1 {
+    margin: 0 0 5px;
+
+    color: #111827;
+    font-size: 25px;
+}
+
+.profile-name p {
+    margin: 0;
+
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+.profile-status {
+    margin-top: 8px;
+
+    color: #16a34a;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.available-dot {
+    font-size: 10px;
+}
+
+.profile-blood {
+    width: 110px;
+    height: 110px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    background: #fff0f0;
+
+    border-radius: 50%;
+}
+
+.profile-blood small {
+    color: #9ca3af;
+    font-size: 8px;
+    font-weight: 700;
+}
+
+.profile-blood strong {
+    color: #e31e24;
+    font-size: 30px;
+}
+
+
+/* =========================
+   DETAILS
+========================= */
+
+.profile-details {
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    margin-top: 30px;
+
+    padding-top: 25px;
+
+    border-top: 1px solid #eeeeee;
+}
+
+.profile-detail {
+    text-align: center;
+
+    border-right: 1px solid #eeeeee;
+}
+
+.profile-detail:last-child {
+    border-right: none;
+}
+
+.profile-detail span {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #9ca3af;
+    font-size: 11px;
+}
+
+.profile-detail strong {
+    color: #374151;
+    font-size: 14px;
+}
+
+.profile-detail .verified {
+    color: #16a34a;
+}
+
+
+/* =========================
+   GRID
+========================= */
+
+.profile-grid {
+    display: grid;
+
+    grid-template-columns: 1.4fr 0.8fr;
+
+    gap: 20px;
+
+    margin-top: 20px;
+}
+
+.profile-panel,
+.profile-request-card {
+    background: #ffffff;
+
+    border: 1px solid #eeeeee;
+
+    border-radius: 14px;
+
+    padding: 25px;
+}
+
+.profile-panel h2,
+.profile-request-card h2 {
+    margin: 0 0 10px;
+
+    color: #111827;
+    font-size: 18px;
+}
+
+.profile-panel > p,
+.profile-request-card > p {
+    color: #6b7280;
+
+    font-size: 13px;
+
+    line-height: 1.6;
+}
+
+
+/* =========================
+   INFO
+========================= */
+
+.profile-info-list {
+    margin-top: 20px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+.profile-info-list div {
+    display: flex;
+    justify-content: space-between;
+
+    padding: 10px 0;
+
+    border-bottom: 1px solid #f3f3f3;
+}
+
+.profile-info-list span {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.profile-info-list strong {
+    color: #374151;
+    font-size: 12px;
+}
+
+
+/* =========================
+   REQUEST CARD
+========================= */
+
+.profile-request-card {
+    text-align: center;
+
+    background:
+        linear-gradient(
+            145deg,
+            #fff5f5,
+            #ffffff
+        );
+}
+
+.request-icon {
+    width: 55px;
+    height: 55px;
+
+    margin: 0 auto 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #fff0f0;
+
+    border-radius: 50%;
+
+    font-size: 24px;
+}
+
+.request-blood-button {
+    width: 100%;
+
+    margin-top: 15px;
+
+    padding: 12px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #e31e24;
+    color: white;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.request-blood-button:hover {
+    background: #c9181e;
+}
+
+.profile-request-card small {
+    display: block;
+
+    margin-top: 10px;
+
+    color: #9ca3af;
+
+    font-size: 10px;
+}
+
+
+/* =========================
+   SAFETY
+========================= */
+
+.profile-safety {
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+    margin-top: 20px;
+
+    padding: 17px 20px;
+
+    background: #f0fdf4;
+
+    border: 1px solid #dcfce7;
+
+    border-radius: 10px;
+}
+
+.profile-safety > span {
+    font-size: 20px;
+}
+
+.profile-safety strong {
+    display: block;
+
+    color: #166534;
+
+    font-size: 12px;
+}
+
+.profile-safety p {
+    margin: 3px 0 0;
+
+    color: #4d7c5b;
+
+    font-size: 11px;
+}
+
+
+/* =========================
+   LOADING / ERROR
+========================= */
+
+.profile-state {
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+
+    background: #f8fafc;
+
+    color: #6b7280;
+}
+
+.profile-loading-icon {
+    width: 70px;
+    height: 70px;
+
+    margin-bottom: 15px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #fff0f0;
+
+    font-size: 30px;
+}
+
+.profile-state h2 {
+    margin-bottom: 5px;
+
+    color: #111827;
+}
+
+.profile-state p {
+    font-size: 13px;
+}
+
+.back-donors-button {
+    margin-top: 15px;
+
+    padding: 10px 18px;
+
+    background: #e31e24;
+    color: white;
+
+    border-radius: 7px;
+
+    text-decoration: none;
+
+    font-size: 12px;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 750px) {
+
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-top {
+        flex-wrap: wrap;
+    }
+
+    .profile-blood {
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 550px) {
+
+    .profile-header {
+        padding: 18px 15px;
+    }
+
+    .profile-main {
+        padding: 25px 15px;
+    }
+
+    .profile-card {
+        padding: 20px;
+    }
+
+    .profile-avatar {
+        width: 65px;
+        height: 65px;
+
+        font-size: 25px;
+    }
+
+    .profile-name h1 {
+        font-size: 20px;
+    }
+
+    .profile-blood {
+        width: 80px;
+        height: 80px;
+    }
+
+    .profile-blood strong {
+        font-size: 23px;
+    }
+
+    .profile-details {
+        grid-template-columns: 1fr;
+
+        gap: 15px;
+    }
+
+    .profile-detail {
+        border-right: none;
+    }
+}

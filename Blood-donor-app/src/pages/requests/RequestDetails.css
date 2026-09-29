@@ -1,0 +1,994 @@
+/* ==========================================
+   REQUEST DETAILS PAGE
+========================================== */
+
+.request-details-page {
+    min-height: 100vh;
+    background: #f6f8fb;
+    padding-bottom: 60px;
+}
+
+
+/* ==========================================
+   HEADER
+========================================== */
+
+.request-details-header {
+    background: white;
+    padding: 30px 8%;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+
+.back-to-requests {
+    display: inline-block;
+    text-decoration: none;
+    color: #dc2626;
+    font-weight: 600;
+    margin-bottom: 25px;
+}
+
+
+.back-to-requests:hover {
+    text-decoration: underline;
+}
+
+
+.request-details-title {
+    max-width: 800px;
+}
+
+
+.details-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #dc2626;
+}
+
+
+.request-details-title h1 {
+    margin-top: 8px;
+    margin-bottom: 10px;
+    font-size: 32px;
+    color: #1f2937;
+}
+
+
+.request-details-title p {
+    color: #6b7280;
+    font-size: 16px;
+}
+
+
+/* ==========================================
+   LOADING
+========================================== */
+
+.request-details-loading {
+    min-height: 100vh;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    font-size: 20px;
+
+    color: #6b7280;
+}
+
+
+/* ==========================================
+   ERROR PAGE
+========================================== */
+
+.request-details-error-page {
+    min-height: 100vh;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 15px;
+}
+
+
+.request-details-error-page a {
+    text-decoration: none;
+
+    color: #dc2626;
+
+    font-weight: 600;
+}
+
+
+/* ==========================================
+   ERROR MESSAGE
+========================================== */
+
+.details-error {
+    width: 84%;
+
+    margin: 25px auto;
+
+    padding: 15px;
+
+    background: #fee2e2;
+
+    color: #b91c1c;
+
+    border-radius: 10px;
+
+    border: 1px solid #fecaca;
+}
+
+
+/* ==========================================
+   REQUEST INFORMATION CARD
+========================================== */
+
+.request-information-card {
+    width: 84%;
+
+    margin: 35px auto;
+
+    background: white;
+
+    border-radius: 18px;
+
+    padding: 30px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.06);
+}
+
+
+.request-card-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    border-bottom: 1px solid #e5e7eb;
+
+    padding-bottom: 20px;
+
+    margin-bottom: 25px;
+}
+
+
+.request-card-header h2 {
+    margin: 0;
+
+    color: #1f2937;
+}
+
+
+.request-card-header p {
+    margin-top: 8px;
+
+    color: #6b7280;
+}
+
+
+/* ==========================================
+   REQUEST STATUS
+========================================== */
+
+.request-status {
+    padding: 8px 16px;
+
+    border-radius: 20px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+
+.request-status.pending {
+    background: #fef3c7;
+
+    color: #92400e;
+}
+
+
+.request-status.completed {
+    background: #dcfce7;
+
+    color: #166534;
+}
+
+
+.request-status.cancelled {
+    background: #fee2e2;
+
+    color: #991b1b;
+}
+
+
+/* ==========================================
+   DETAILS GRID
+========================================== */
+
+.request-details-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(220px, 1fr));
+
+    gap: 20px;
+}
+
+
+.detail-item {
+    background: #f9fafb;
+
+    padding: 18px;
+
+    border-radius: 12px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+
+.detail-item span {
+    font-size: 13px;
+
+    color: #6b7280;
+}
+
+
+.detail-item strong {
+    font-size: 16px;
+
+    color: #1f2937;
+
+    word-break: break-word;
+}
+
+
+.blood-group-value {
+    color: #dc2626 !important;
+
+    font-size: 22px !important;
+}
+
+
+/* ==========================================
+   URGENCY
+========================================== */
+
+.urgency {
+    font-weight: 700;
+}
+
+
+.urgency.normal {
+    color: #2563eb;
+}
+
+
+.urgency.urgent {
+    color: #d97706;
+}
+
+
+.urgency.emergency {
+    color: #dc2626;
+}
+
+
+/* ==========================================
+   AI MATCHING SECTION
+========================================== */
+
+.ai-matching-section {
+    width: 84%;
+
+    margin: 40px auto;
+}
+
+
+/* ==========================================
+   AI HEADER
+========================================== */
+
+.ai-section-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 30px;
+
+    margin-bottom: 30px;
+}
+
+
+.ai-label {
+    font-size: 12px;
+
+    font-weight: 700;
+
+    letter-spacing: 1.2px;
+
+    color: #7c3aed;
+}
+
+
+.ai-section-header h2 {
+    margin: 8px 0;
+
+    font-size: 28px;
+
+    color: #1f2937;
+}
+
+
+.ai-section-header p {
+    color: #6b7280;
+
+    max-width: 650px;
+
+    line-height: 1.6;
+}
+
+
+/* ==========================================
+   FIND DONORS BUTTON
+========================================== */
+
+.find-donors-button {
+    border: none;
+
+    background: #7c3aed;
+
+    color: white;
+
+    padding: 15px 24px;
+
+    border-radius: 10px;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    white-space: nowrap;
+
+    transition: 0.3s;
+}
+
+
+.find-donors-button:hover {
+    transform: translateY(-2px);
+
+    background: #6d28d9;
+
+    box-shadow:
+        0 8px 20px rgba(124, 58, 237, 0.25);
+}
+
+
+.find-donors-button:disabled {
+    opacity: 0.7;
+
+    cursor: not-allowed;
+
+    transform: none;
+}
+
+
+/* ==========================================
+   EMPTY AI RESULT
+========================================== */
+
+.no-matching-results {
+    background: white;
+
+    padding: 60px 30px;
+
+    text-align: center;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+
+.ai-icon {
+    font-size: 50px;
+
+    margin-bottom: 15px;
+}
+
+
+.no-matching-results h3 {
+    color: #1f2937;
+
+    margin-bottom: 10px;
+}
+
+
+.no-matching-results p {
+    color: #6b7280;
+
+    max-width: 500px;
+
+    margin: auto;
+
+    line-height: 1.6;
+}
+
+
+/* ==========================================
+   MATCHING DONORS LIST
+========================================== */
+
+.matching-donors-list {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 18px;
+}
+
+
+/* ==========================================
+   DONOR CARD
+========================================== */
+
+.matching-donor-card {
+    background: white;
+
+    border-radius: 16px;
+
+    padding: 22px;
+
+    display: grid;
+
+    grid-template-columns:
+        70px
+        minmax(220px, 1.5fr)
+        150px
+        130px
+        120px
+        150px;
+
+    align-items: center;
+
+    gap: 20px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.05);
+
+    transition: 0.3s;
+}
+
+
+.matching-donor-card:hover {
+    transform: translateY(-3px);
+
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+
+/* ==========================================
+   RANK
+========================================== */
+
+.donor-rank {
+    width: 50px;
+
+    height: 50px;
+
+    border-radius: 50%;
+
+    background: #ede9fe;
+
+    color: #7c3aed;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    font-weight: 800;
+
+    font-size: 18px;
+}
+
+
+/* ==========================================
+   DONOR INFORMATION
+========================================== */
+
+.matching-donor-info {
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+}
+
+
+.donor-avatar {
+    width: 50px;
+
+    height: 50px;
+
+    border-radius: 50%;
+
+    background: #fee2e2;
+
+    color: #dc2626;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    font-size: 20px;
+
+    font-weight: 700;
+}
+
+
+.matching-donor-info h3 {
+    margin: 0 0 6px;
+
+    color: #1f2937;
+}
+
+
+.matching-donor-info p {
+    margin: 0;
+
+    font-size: 14px;
+
+    color: #6b7280;
+}
+
+
+/* ==========================================
+   MATCH SCORE
+========================================== */
+
+.match-score-box {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+}
+
+
+.match-score-box span {
+    font-size: 11px;
+
+    color: #6b7280;
+
+    font-weight: 700;
+}
+
+
+.match-score-box strong {
+    font-size: 24px;
+
+    color: #7c3aed;
+}
+
+
+/* ==========================================
+   DISTANCE
+========================================== */
+
+.match-distance {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+
+.match-distance span {
+    font-size: 12px;
+
+    color: #6b7280;
+}
+
+
+.match-distance strong {
+    color: #1f2937;
+}
+
+
+/* ==========================================
+   ELIGIBILITY
+========================================== */
+
+.match-eligibility span {
+    padding: 8px 12px;
+
+    border-radius: 20px;
+
+    font-size: 13px;
+
+    font-weight: 600;
+}
+
+
+.eligible {
+    background: #dcfce7;
+
+    color: #166534;
+}
+
+
+.not-eligible {
+    background: #fee2e2;
+
+    color: #991b1b;
+}
+
+
+/* ==========================================
+   DONATION DAYS
+========================================== */
+
+.donation-days {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+
+.donation-days span {
+    font-size: 12px;
+
+    color: #6b7280;
+}
+
+
+.donation-days strong {
+    color: #1f2937;
+
+    font-size: 14px;
+}
+
+
+/* ==========================================
+   TABLET
+========================================== */
+
+@media (max-width: 1100px) {
+
+    .matching-donor-card {
+
+        grid-template-columns:
+            60px
+            1fr
+            140px
+            120px;
+
+    }
+
+
+    .match-eligibility,
+    .donation-days {
+
+        grid-column:
+            span 2;
+
+    }
+
+}
+
+
+/* ==========================================
+   MOBILE
+========================================== */
+
+@media (max-width: 768px) {
+
+    .request-details-header {
+        padding: 25px 6%;
+    }
+
+
+    .request-information-card,
+    .ai-matching-section,
+    .details-error {
+        width: 88%;
+    }
+
+
+    .request-card-header {
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 15px;
+    }
+
+
+    .ai-section-header {
+        flex-direction: column;
+
+        align-items: flex-start;
+    }
+
+
+    .find-donors-button {
+        width: 100%;
+    }
+
+
+    .matching-donor-card {
+
+        grid-template-columns:
+            1fr;
+
+        gap: 18px;
+
+    }
+
+
+    .match-eligibility,
+    .donation-days {
+        grid-column: auto;
+    }
+
+
+    .donor-rank {
+        width: 45px;
+
+        height: 45px;
+    }
+
+}
+
+
+@media (max-width: 480px) {
+
+    .request-details-title h1 {
+        font-size: 26px;
+    }
+
+
+    .ai-section-header h2 {
+        font-size: 23px;
+    }
+
+
+    .request-information-card {
+        padding: 20px;
+    }
+
+}
+
+
+
+/* ==========================================
+   NOTIFICATION SUCCESS
+========================================== */
+
+.notification-success {
+
+    margin: 20px auto;
+
+    max-width: 1100px;
+
+    padding: 14px 18px;
+
+    background: #f0fdf4;
+
+    border: 1px solid #bbf7d0;
+
+    color: #15803d;
+
+    border-radius: 8px;
+
+    font-size: 13px;
+
+    font-weight: 600;
+}
+
+
+/* ==========================================
+   NOTIFY DONOR BUTTON
+========================================== */
+
+.notify-donor-button {
+
+    padding: 10px 15px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #e31e24;
+
+    color: white;
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+.notify-donor-button:hover {
+
+    background: #c9181e;
+
+}
+
+
+.notify-donor-button:disabled {
+
+    background: #9ca3af;
+
+    cursor: not-allowed;
+
+
+}
+/* ==========================================
+   DONOR I CAN HELP SECTION
+========================================== */
+
+.donor-help-section {
+
+    margin-top: 25px;
+
+    padding: 22px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    background: #fff7f7;
+
+    border: 1px solid #ffd1d1;
+
+    border-radius: 12px;
+
+}
+
+
+.donor-help-section h3 {
+
+    margin: 0 0 6px;
+
+    color: #111827;
+
+    font-size: 17px;
+
+}
+
+
+.donor-help-section p {
+
+    margin: 0;
+
+    color: #6b7280;
+
+    font-size: 13px;
+
+}
+
+
+.can-help-button {
+
+    padding: 13px 22px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #e31e24;
+
+    color: white;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    white-space: nowrap;
+
+}
+
+
+.can-help-button:hover {
+
+    background: #c9181e;
+
+}
+
+
+.can-help-button:disabled {
+
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+}
+
+
+/* ==========================================
+   HELP SUCCESS MESSAGE
+========================================== */
+
+.help-success {
+
+    max-width: 1100px;
+
+    margin: 15px auto;
+
+    padding: 14px 18px;
+
+    background: #f0fdf4;
+
+    border: 1px solid #bbf7d0;
+
+    border-radius: 8px;
+
+    color: #15803d;
+
+    font-size: 14px;
+
+}
+
+
+/* ==========================================
+   MOBILE
+========================================== */
+
+@media (max-width: 700px) {
+
+    .donor-help-section {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+    }
+
+
+    .can-help-button {
+
+        width: 100%;
+
+    }
+
+}

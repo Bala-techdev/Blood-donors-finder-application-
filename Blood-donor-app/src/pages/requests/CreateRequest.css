@@ -1,0 +1,447 @@
+.create-request-page {
+    min-height: 100vh;
+
+    background: #f8fafc;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.request-page-header {
+    padding: 25px 35px;
+
+    background: #ffffff;
+
+    border-bottom: 1px solid #eeeeee;
+}
+
+.request-back {
+    color: #6b7280;
+
+    font-size: 13px;
+
+    text-decoration: none;
+}
+
+.request-back:hover {
+    color: #e31e24;
+}
+
+.request-header-title {
+    max-width: 850px;
+
+    margin: 30px auto 0;
+
+    text-align: center;
+}
+
+.request-header-title span {
+    color: #e31e24;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    letter-spacing: 1px;
+}
+
+.request-header-title h1 {
+    margin: 8px 0;
+
+    color: #111827;
+
+    font-size: 34px;
+}
+
+.request-header-title p {
+    margin: 0;
+
+    color: #9ca3af;
+
+    font-size: 13px;
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+.create-request-main {
+    max-width: 1050px;
+
+    margin: auto;
+
+    padding: 35px 25px;
+
+    display: grid;
+
+    grid-template-columns: 1.5fr 0.7fr;
+
+    gap: 20px;
+
+    align-items: start;
+}
+
+
+/* =========================
+   FORM CARD
+========================= */
+
+.request-form-card {
+    padding: 30px;
+
+    background: #ffffff;
+
+    border: 1px solid #eeeeee;
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.04);
+}
+
+
+/* =========================
+   MESSAGES
+========================= */
+
+.request-error,
+.request-success {
+    padding: 11px 13px;
+
+    margin-bottom: 20px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+}
+
+.request-error {
+    color: #be123c;
+
+    background: #fff1f2;
+
+    border: 1px solid #fecdd3;
+}
+
+.request-success {
+    color: #15803d;
+
+    background: #f0fdf4;
+
+    border: 1px solid #bbf7d0;
+}
+
+
+/* =========================
+   SECTION TITLE
+========================= */
+
+.form-section-title {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin: 10px 0 20px;
+
+    padding-bottom: 10px;
+
+    border-bottom: 1px solid #eeeeee;
+
+    color: #111827;
+
+    font-size: 14px;
+
+    font-weight: 700;
+}
+
+.form-section-title span {
+    width: 27px;
+    height: 27px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #fff0f0;
+
+    color: #e31e24;
+
+    font-size: 10px;
+}
+
+
+/* =========================
+   FORM
+========================= */
+
+.request-form-group {
+    margin-bottom: 17px;
+}
+
+.request-form-group label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: #374151;
+
+    font-size: 12px;
+
+    font-weight: 600;
+}
+
+.request-form-group input,
+.request-form-group select,
+.request-form-group textarea {
+    width: 100%;
+
+    padding: 12px 13px;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 7px;
+
+    outline: none;
+
+    background: #ffffff;
+
+    color: #374151;
+
+    font-family: inherit;
+
+    font-size: 13px;
+
+    box-sizing: border-box;
+}
+
+.request-form-group textarea {
+    resize: vertical;
+}
+
+.request-form-group input:focus,
+.request-form-group select:focus,
+.request-form-group textarea:focus {
+    border-color: #e31e24;
+
+    box-shadow:
+        0 0 0 3px rgba(227, 30, 36, 0.07);
+}
+
+.request-form-row {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 15px;
+}
+
+
+/* =========================
+   ACTIONS
+========================= */
+
+.request-form-actions {
+    display: flex;
+
+    justify-content: flex-end;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-top: 25px;
+
+    padding-top: 20px;
+
+    border-top: 1px solid #eeeeee;
+}
+
+.cancel-request {
+    padding: 11px 18px;
+
+    color: #6b7280;
+
+    border: 1px solid #eeeeee;
+
+    border-radius: 7px;
+
+    text-decoration: none;
+
+    font-size: 12px;
+}
+
+.submit-request {
+    padding: 12px 20px;
+
+    border: none;
+
+    border-radius: 7px;
+
+    background: #e31e24;
+
+    color: #ffffff;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.submit-request:hover:not(:disabled) {
+    background: #c9181e;
+}
+
+.submit-request:disabled {
+    opacity: 0.7;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================
+   INFO CARD
+========================= */
+
+.request-info-card {
+    padding: 25px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #fff1f1,
+            #ffffff
+        );
+
+    border: 1px solid #ffdede;
+
+    border-radius: 14px;
+}
+
+.info-blood-icon {
+    width: 55px;
+    height: 55px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 18px;
+
+    background: #ffffff;
+
+    border-radius: 50%;
+
+    font-size: 25px;
+
+    box-shadow:
+        0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.request-info-card h2 {
+    margin: 0 0 10px;
+
+    color: #111827;
+
+    font-size: 18px;
+}
+
+.request-info-card > p {
+    color: #6b7280;
+
+    font-size: 12px;
+
+    line-height: 1.7;
+}
+
+.request-tip {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+
+    margin-top: 25px;
+
+    padding: 15px;
+
+    background: #ffffff;
+
+    border-radius: 9px;
+}
+
+.request-tip strong {
+    color: #e31e24;
+
+    font-size: 12px;
+}
+
+.request-tip span {
+    color: #6b7280;
+
+    font-size: 11px;
+
+    line-height: 1.6;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 800px) {
+
+    .create-request-main {
+        grid-template-columns: 1fr;
+    }
+
+    .request-info-card {
+        order: -1;
+    }
+}
+
+@media (max-width: 550px) {
+
+    .request-page-header {
+        padding: 20px 15px;
+    }
+
+    .request-header-title h1 {
+        font-size: 28px;
+    }
+
+    .create-request-main {
+        padding: 20px 15px;
+    }
+
+    .request-form-card {
+        padding: 20px;
+    }
+
+    .request-form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .request-form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .cancel-request,
+    .submit-request {
+        width: 100%;
+
+        text-align: center;
+
+        box-sizing: border-box;
+    }
+}
