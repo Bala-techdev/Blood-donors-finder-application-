@@ -45,8 +45,11 @@ function App() {
                     element={<RequestDetails />}
 />
              </Routes>
+<<<<<<< HEAD
 
              
+=======
+>>>>>>> 7629b2e370006a68f6722c2a8e82c63ac0e0eea2
         </BrowserRouter>
     );
 }
