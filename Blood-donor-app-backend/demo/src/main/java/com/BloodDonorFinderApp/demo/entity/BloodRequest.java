@@ -32,6 +32,10 @@ public class BloodRequest {
     @Column(nullable = false)
     private String location;
 
+    private Double latitude;
+
+    private Double longitude;
+
     @Column(nullable = false)
     private String urgency;
 
@@ -149,5 +153,20 @@ public class BloodRequest {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 }

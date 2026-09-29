@@ -1,12 +1,20 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import "./Notifications.css";
 
 function Notifications() {
 
+    const navigate = useNavigate();
+
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+
+    // ==========================================
+    // LOAD NOTIFICATIONS
+    // ==========================================
 
     useEffect(() => {
 
@@ -14,56 +22,170 @@ function Notifications() {
 
             try {
 
-                const response = await api.get("/requests");
+                setLoading(true);
+                setError("");
 
-                const requests = response.data || [];
+
+                // ==========================================
+                // 1. GET LOGGED-IN USER
+                // ==========================================
+
+                const storedUser =
+                    localStorage.getItem("bloodDonorUser");
+
+
+                if (!storedUser) {
+
+                    setError(
+                        "Please login to view notifications."
+                    );
+
+                    return;
+                }
+
+
+                const user = JSON.parse(storedUser);
+
+
+                // ==========================================
+                // 2. GET DONOR PROFILE USING USER ID
+                // ==========================================
+
+                const donorResponse =
+                    await api.get(
+                        `/donors/user/${user.id}`
+                    );
+
+
+                const donor = donorResponse.data;
+
+
+                // ==========================================
+                // 3. GET DONOR RESPONSES
+                // ==========================================
+
+                const response =
+                    await api.get(
+                        `/request-responses/donor/${donor.id}`
+                    );
+
+
+                const donorResponses =
+                    response.data || [];
+
 
                 const generatedNotifications = [];
 
-                requests.forEach((request) => {
 
-                    if (request.urgency === "EMERGENCY") {
+                // ==========================================
+                // 4. CREATE NOTIFICATIONS
+                // ==========================================
+
+                donorResponses.forEach((item) => {
+
+                    const request = item.bloodRequest;
+
+
+                    // Safety check
+                    if (!request) {
+                        return;
+                    }
+
+
+                    // ==========================================
+                    // AI RECOMMENDATION
+                    // ==========================================
+
+                    if (item.response === "PENDING") {
 
                         generatedNotifications.push({
-                            id: `emergency-${request.id}`,
-                            type: "emergency",
-                            icon: "🚨",
-                            title: "Emergency Blood Request",
-                            message:
-                                `${request.bloodGroup} blood is urgently required at ${request.hospitalName}.`,
-                            time: "Recent",
-                            unread: true
-                        });
 
-                    } else {
+                            id: `recommendation-${item.id}`,
 
-                        generatedNotifications.push({
-                            id: `request-${request.id}`,
-                            type: "request",
+                            requestId: request.id,
+
+                            type: "recommendation",
+
                             icon: "🩸",
-                            title: "New Blood Request",
+
+                            title:
+                                "Blood Request Recommended",
+
                             message:
-                                `${request.bloodGroup} blood requested for ${request.patientName}.`,
-                            time: "Recent",
-                            unread: false
+                                `${request.bloodGroup} blood is required for ${request.patientName} at ${request.hospitalName}.`,
+
+                            time: "New",
+
+                            unread: true
+
                         });
 
                     }
 
 
-                    if (
-                        request.status === "DONOR_RESPONDED"
-                    ) {
+                    // ==========================================
+                    // DONOR ACCEPTED
+                    // ==========================================
+
+                    if (item.response === "ACCEPTED") {
 
                         generatedNotifications.push({
-                            id: `response-${request.id}`,
+
+                            id: `accepted-${item.id}`,
+
+                            // IMPORTANT
+                            requestId: request.id,
+
                             type: "response",
+
                             icon: "❤️",
-                            title: "Donor Response Received",
+
+                            title:
+                                "You Accepted a Blood Request",
+
                             message:
-                                `A donor has responded to request #${request.id}.`,
-                            time: "Recent",
-                            unread: true
+                                `You accepted the request for ${request.patientName} at ${request.hospitalName}.`,
+
+                            time:
+                                "Recent",
+
+                            unread:
+                                false
+
+                        });
+
+                    }
+
+
+                    // ==========================================
+                    // DONOR DECLINED
+                    // ==========================================
+
+                    if (item.response === "DECLINED") {
+
+                        generatedNotifications.push({
+
+                            id: `declined-${item.id}`,
+
+                            // IMPORTANT
+                            requestId: request.id,
+
+                            type: "declined",
+
+                            icon: "❌",
+
+                            title:
+                                "Blood Request Declined",
+
+                            message:
+                                `You declined the blood request for ${request.patientName}.`,
+
+                            time:
+                                "Recent",
+
+                            unread:
+                                false
+
                         });
 
                     }
@@ -71,9 +193,14 @@ function Notifications() {
                 });
 
 
+                // ==========================================
+                // 5. SAVE NOTIFICATIONS
+                // ==========================================
+
                 setNotifications(
                     generatedNotifications
                 );
+
 
             } catch (error) {
 
@@ -81,6 +208,23 @@ function Notifications() {
                     "Notification error:",
                     error
                 );
+
+
+                if (
+                    error.response?.status === 404
+                ) {
+
+                    setError(
+                        "Donor profile not found. Please complete your donor profile first."
+                    );
+
+                } else {
+
+                    setError(
+                        "Unable to load notifications."
+                    );
+
+                }
 
             } finally {
 
@@ -90,22 +234,38 @@ function Notifications() {
 
         };
 
+
         loadNotifications();
 
     }, []);
 
 
+    // ==========================================
+    // MARK ALL AS READ
+    // ==========================================
+
     const markAllRead = () => {
 
         setNotifications(
-            notifications.map((notification) => ({
-                ...notification,
-                unread: false
-            }))
+
+            notifications.map(
+                (notification) => ({
+
+                    ...notification,
+
+                    unread: false
+
+                })
+            )
+
         );
 
     };
 
+
+    // ==========================================
+    // CLEAR ALL
+    // ==========================================
 
     const clearNotifications = () => {
 
@@ -114,10 +274,66 @@ function Notifications() {
     };
 
 
+    // ==========================================
+    // REMOVE ONE NOTIFICATION
+    // ==========================================
+
+    const removeNotification = (notificationId) => {
+
+        setNotifications(
+
+            notifications.filter(
+                (item) =>
+                    item.id !== notificationId
+            )
+
+        );
+
+    };
+
+
+    // ==========================================
+    // OPEN REQUEST DETAILS
+    // ==========================================
+
+    const openRequest = (notification) => {
+
+        if (!notification.requestId) {
+            return;
+        }
+
+
+        // Mark clicked notification as read
+        setNotifications((currentNotifications) =>
+            currentNotifications.map((item) =>
+
+                item.id === notification.id
+
+                    ? {
+                        ...item,
+                        unread: false
+                    }
+
+                    : item
+            )
+        );
+
+
+        navigate(
+            `/requests/${notification.requestId}`
+        );
+
+    };
+
+
     return (
+
         <div className="notifications-page">
 
-            {/* HEADER */}
+
+            {/* ==========================================
+                HEADER
+            ========================================== */}
 
             <header className="notifications-header">
 
@@ -127,6 +343,7 @@ function Notifications() {
                 >
                     ← Dashboard
                 </Link>
+
 
                 <div className="notifications-title">
 
@@ -139,7 +356,7 @@ function Notifications() {
                     </h1>
 
                     <p>
-                        Stay updated about blood requests and donor activity.
+                        Stay updated about your blood donation activity.
                     </p>
 
                 </div>
@@ -147,48 +364,67 @@ function Notifications() {
             </header>
 
 
-            {/* MAIN */}
+            {/* ==========================================
+                MAIN
+            ========================================== */}
 
             <main className="notifications-main">
 
-                <div className="notifications-toolbar">
 
-                    <div>
+                {/* ==========================================
+                    TOOLBAR
+                ========================================== */}
 
-                        <strong>
-                            {notifications.filter(
-                                (notification) =>
-                                    notification.unread
-                            ).length}
-                        </strong>
+                {!loading &&
+                    !error && (
 
-                        <span>
-                            unread notifications
-                        </span>
+                        <div className="notifications-toolbar">
 
-                    </div>
+                            <div>
 
+                                <strong>
 
-                    <div className="notification-actions">
+                                    {
+                                        notifications.filter(
+                                            (notification) =>
+                                                notification.unread
+                                        ).length
+                                    }
 
-                        <button
-                            onClick={markAllRead}
-                        >
-                            ✓ Mark all as read
-                        </button>
+                                </strong>
 
-                        <button
-                            onClick={clearNotifications}
-                        >
-                            Clear all
-                        </button>
+                                <span>
+                                    unread notifications
+                                </span>
 
-                    </div>
-
-                </div>
+                            </div>
 
 
-                {/* LOADING */}
+                            <div className="notification-actions">
+
+                                <button
+                                    onClick={markAllRead}
+                                >
+                                    ✓ Mark all as read
+                                </button>
+
+
+                                <button
+                                    onClick={clearNotifications}
+                                >
+                                    Clear all
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    )}
+
+
+                {/* ==========================================
+                    LOADING
+                ========================================== */}
 
                 {loading && (
 
@@ -207,9 +443,38 @@ function Notifications() {
                 )}
 
 
-                {/* EMPTY */}
+                {/* ==========================================
+                    ERROR
+                ========================================== */}
 
                 {!loading &&
+                    error && (
+
+                        <div className="notification-state">
+
+                            <div>
+                                ⚠️
+                            </div>
+
+                            <h2>
+                                Unable to Load
+                            </h2>
+
+                            <p>
+                                {error}
+                            </p>
+
+                        </div>
+
+                    )}
+
+
+                {/* ==========================================
+                    EMPTY
+                ========================================== */}
+
+                {!loading &&
+                    !error &&
                     notifications.length === 0 && (
 
                         <div className="notification-state">
@@ -223,7 +488,7 @@ function Notifications() {
                             </h2>
 
                             <p>
-                                No new notifications right now.
+                                No blood request notifications right now.
                             </p>
 
                         </div>
@@ -231,33 +496,60 @@ function Notifications() {
                     )}
 
 
-                {/* NOTIFICATIONS */}
+                {/* ==========================================
+                    NOTIFICATIONS
+                ========================================== */}
 
                 {!loading &&
+                    !error &&
                     notifications.length > 0 && (
 
                         <div className="notifications-list">
+
 
                             {notifications.map(
                                 (notification) => (
 
                                     <div
                                         key={notification.id}
+
                                         className={`notification-card ${
                                             notification.unread
                                                 ? "unread"
                                                 : ""
                                         }`}
+
+                                        onClick={() =>
+                                            openRequest(
+                                                notification
+                                            )
+                                        }
+
+                                        style={{
+                                            cursor: notification.requestId
+                                                ? "pointer"
+                                                : "default"
+                                        }}
                                     >
 
+
+                                        {/* ICON */}
+
                                         <div
-                                            className={`notification-icon ${notification.type}`}
+                                            className={
+                                                `notification-icon ${notification.type}`
+                                            }
                                         >
+
                                             {notification.icon}
+
                                         </div>
 
 
+                                        {/* CONTENT */}
+
                                         <div className="notification-content">
+
 
                                             <div className="notification-title-row">
 
@@ -265,51 +557,74 @@ function Notifications() {
                                                     {notification.title}
                                                 </h3>
 
+
                                                 {notification.unread && (
-                                                    <span className="unread-dot"></span>
+
+                                                    <span
+                                                        className="unread-dot"
+                                                    >
+                                                    </span>
+
                                                 )}
 
                                             </div>
+
 
                                             <p>
                                                 {notification.message}
                                             </p>
 
+
                                             <small>
                                                 {notification.time}
                                             </small>
 
+
                                         </div>
 
 
+                                        {/* REMOVE BUTTON */}
+
                                         <button
+
                                             className="notification-menu"
-                                            onClick={() =>
-                                                setNotifications(
-                                                    notifications.filter(
-                                                        (item) =>
-                                                            item.id !==
-                                                            notification.id
-                                                    )
-                                                )
-                                            }
+
+                                            onClick={(event) => {
+
+                                                // Prevent opening request
+                                                event.stopPropagation();
+
+                                                removeNotification(
+                                                    notification.id
+                                                );
+
+                                            }}
+
                                         >
                                             ×
                                         </button>
 
+
                                     </div>
 
                                 )
+
                             )}
+
 
                         </div>
 
                     )}
 
+
             </main>
 
+
         </div>
+
     );
+
 }
+
 
 export default Notifications;

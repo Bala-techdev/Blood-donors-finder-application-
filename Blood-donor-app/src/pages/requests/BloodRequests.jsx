@@ -66,32 +66,93 @@ function BloodRequests() {
         return;
     }
 
+
     try {
 
-        await api.put(
-            `/requests/${requestId}/status`,
-            null,
+        // Get logged-in user
+        const storedUser =
+            localStorage.getItem("bloodDonorUser");
+
+
+        if (!storedUser) {
+
+            alert(
+                "Please login before responding to a blood request."
+            );
+
+            return;
+        }
+
+
+        const user =
+            JSON.parse(storedUser);
+
+
+        if (!user.id) {
+
+            alert(
+                "Unable to identify the logged-in user."
+            );
+
+            return;
+        }
+
+
+        console.log(
+            "Donor responding to request:",
             {
-                params: {
-                    status: "DONOR_RESPONDED"
-                }
+                requestId: requestId,
+                userId: user.id
             }
         );
+
+
+        // Call donor response API
+        const response = await api.post(
+            `/request-responses/request/${requestId}/user/${user.id}`
+        );
+
+
+        console.log(
+            "Donor response:",
+            response.data
+        );
+
 
         alert(
             "Thank you! Your willingness to donate has been recorded."
         );
 
+
+        // Refresh requests
         fetchRequests();
+
 
     } catch (err) {
 
-        console.error(err);
-
-        alert(
-            "Unable to respond to this request."
+        console.error(
+            "Unable to respond to request:",
+            err
         );
+
+
+        const message =
+            err.response?.data?.message;
+
+
+        if (message) {
+
+            alert(message);
+
+        } else {
+
+            alert(
+                "Unable to respond to this request."
+            );
+
+        }
     }
+    
 };
 
     return (
@@ -392,20 +453,31 @@ function BloodRequests() {
 
                                     {/* ACTION */}
 
-                                    <div className="request-card-bottom">
+                                 <div className="request-card-bottom">
 
-                                        <span className="request-date">
-                                            Created recently
-                                        </span>
+    <span className="request-date">
+        Created recently
+    </span>
 
-                                       <button
-                                            className="help-button"
-                                            onClick={() => handleHelp(request.id)}
-                                        >
-                                            🩸 I Can Help
-                                        </button>
+    <div className="request-actions">
 
-                                    </div>
+        <Link
+            to={`/requests/${request.id}`}
+            className="view-details-button"
+        >
+            View Details
+        </Link>
+
+        <button
+            className="help-button"
+            onClick={() => handleHelp(request.id)}
+        >
+            🩸 I Can Help
+        </button>
+
+    </div>
+
+</div>
 
                                 </div>
 

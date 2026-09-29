@@ -48,4 +48,11 @@ public class DonorService {
                         location
                 );
     }
+    public Optional<DonorProfile> getDonorByUserId(
+            Long userId
+    ) {
+
+        return donorProfileRepository
+                .findByUserId(userId);
+    }
 }

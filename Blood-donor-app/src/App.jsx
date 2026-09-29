@@ -9,6 +9,7 @@ import CreateRequest from "./pages/requests/CreateRequest";
 import BloodRequests from "./pages/requests/BloodRequests";
 import Profile from "./pages/profile/Profile";
 import Notifications from "./pages/notifications/Notifications";
+import RequestDetails from "./pages/requests/RequestDetails";
 function App() {
     return (
         <BrowserRouter>
@@ -39,6 +40,10 @@ function App() {
                     path="/notifications"
                     element={<Notifications />}
                 />
+                <Route
+                    path="/requests/:id"
+                    element={<RequestDetails />}
+/>
              </Routes>
         </BrowserRouter>
     );

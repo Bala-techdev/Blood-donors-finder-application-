@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
@@ -14,12 +15,20 @@ function FindDonors() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    const [smartMatching, setSmartMatching] = useState(false);
+
+
+    // =========================
+    // EXISTING DONOR SEARCH
+    // =========================
+
     const fetchDonors = async () => {
 
         try {
 
             setLoading(true);
             setError("");
+            setSmartMatching(false);
 
             const params = {};
 
@@ -31,9 +40,12 @@ function FindDonors() {
                 params.location = location;
             }
 
-            const response = await api.get("/donors/search", {
-                params
-            });
+            const response = await api.get(
+                "/donors/search",
+                {
+                    params
+                }
+            );
 
             setDonors(response.data);
 
@@ -53,23 +65,183 @@ function FindDonors() {
     };
 
 
+    // =========================
+    // SMART DONOR MATCHING
+    // =========================
+
+  const findBestMatches = async () => {
+
+    try {
+
+        setLoading(true);
+        setError("");
+
+        // Blood group is required
+        if (!bloodGroup) {
+
+            setError(
+                "Please select a blood group first."
+            );
+
+            setLoading(false);
+
+            return;
+        }
+
+
+        /*
+         * Temporary Coimbatore coordinates.
+         *
+         * Later we will replace these with
+         * the actual user's GPS coordinates.
+         */
+        const requestData = {
+
+            bloodGroup: bloodGroup,
+
+            location: location,
+
+            latitude: 11.0168,
+
+            longitude: 76.9558
+
+        };
+
+
+        console.log(
+            "Smart Match Request:",
+            requestData
+        );
+
+
+        // Call Smart Matching API
+        const response = await api.post(
+            "/donors/match",
+            requestData
+        );
+
+
+        console.log(
+            "Smart Match Raw Response:",
+            response.data
+        );
+
+
+        /*
+         * Backend response:
+         *
+         * {
+         *     donor: {...},
+         *     score: 100,
+         *     distance: 0
+         * }
+         *
+         * Convert it into the structure
+         * expected by DonorCard.
+         */
+
+        const recommendedDonors =
+            response.data.map((item) => {
+
+                return {
+
+                    // Existing donor information
+                    ...item.donor,
+
+
+                    // User information
+                    name: item.donor.user?.name || "Blood Donor",
+
+
+                    // Smart matching information
+                    matchScore: item.score,
+
+                    distance: item.distance
+
+                };
+
+            });
+
+
+        console.log(
+            "Processed Recommended Donors:",
+            recommendedDonors
+        );
+
+
+        setDonors(recommendedDonors);
+
+        setSmartMatching(true);
+
+
+    } catch (err) {
+
+        console.error(
+            "Smart matching error:",
+            err
+        );
+
+        setError(
+            "Unable to find recommended donors. Please try again."
+        );
+
+    } finally {
+
+        setLoading(false);
+
+    }
+};
+    // =========================
+    // INITIAL LOAD
+    // =========================
+
     useEffect(() => {
+
         fetchDonors();
+
     }, []);
 
+
+    // =========================
+    // NORMAL SEARCH
+    // =========================
 
     const handleSearch = (e) => {
 
         e.preventDefault();
 
         fetchDonors();
+
+    };
+
+
+    // =========================
+    // CLEAR FILTERS
+    // =========================
+
+    const handleClear = () => {
+
+        setBloodGroup("");
+        setLocation("");
+        setSmartMatching(false);
+
+        // Load all donors again
+        setTimeout(() => {
+
+            fetchDonors();
+
+        }, 0);
+
     };
 
 
     return (
+
         <div className="find-donors-page">
 
-            {/* HEADER */}
+            {/* =========================
+                HEADER
+            ========================= */}
 
             <header className="donors-header">
 
@@ -81,6 +253,7 @@ function FindDonors() {
                     >
                         ← Dashboard
                     </Link>
+
 
                     <div className="donors-title">
 
@@ -104,9 +277,16 @@ function FindDonors() {
             </header>
 
 
-            {/* SEARCH */}
+            {/* =========================
+                MAIN
+            ========================= */}
 
             <main className="donors-main">
+
+
+                {/* =========================
+                    NORMAL SEARCH
+                ========================= */}
 
                 <form
                     className="donor-search"
@@ -122,7 +302,9 @@ function FindDonors() {
                         <select
                             value={bloodGroup}
                             onChange={(e) =>
-                                setBloodGroup(e.target.value)
+                                setBloodGroup(
+                                    e.target.value
+                                )
                             }
                         >
 
@@ -130,14 +312,37 @@ function FindDonors() {
                                 All Blood Groups
                             </option>
 
-                            <option value="A+">A+</option>
-                            <option value="A-">A-</option>
-                            <option value="B+">B+</option>
-                            <option value="B-">B-</option>
-                            <option value="AB+">AB+</option>
-                            <option value="AB-">AB-</option>
-                            <option value="O+">O+</option>
-                            <option value="O-">O-</option>
+                            <option value="A+">
+                                A+
+                            </option>
+
+                            <option value="A-">
+                                A-
+                            </option>
+
+                            <option value="B+">
+                                B+
+                            </option>
+
+                            <option value="B-">
+                                B-
+                            </option>
+
+                            <option value="AB+">
+                                AB+
+                            </option>
+
+                            <option value="AB-">
+                                AB-
+                            </option>
+
+                            <option value="O+">
+                                O+
+                            </option>
+
+                            <option value="O-">
+                                O-
+                            </option>
 
                         </select>
 
@@ -155,7 +360,9 @@ function FindDonors() {
                             placeholder="Enter city or location"
                             value={location}
                             onChange={(e) =>
-                                setLocation(e.target.value)
+                                setLocation(
+                                    e.target.value
+                                )
                             }
                         />
 
@@ -172,36 +379,94 @@ function FindDonors() {
                 </form>
 
 
-                {/* RESULTS HEADER */}
+                {/* =========================
+                    SMART MATCHING
+                ========================= */}
+
+                <div className="smart-match-box">
+
+                    <div className="smart-match-info">
+
+                        <span className="smart-match-icon">
+                            ✨
+                        </span>
+
+                        <div>
+
+                            <h3>
+                                Smart Donor Matching
+                            </h3>
+
+                            <p>
+                                Find the most suitable donors
+                                using blood compatibility,
+                                availability, verification,
+                                experience and distance.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        type="button"
+                        className="smart-match-button"
+                        onClick={findBestMatches}
+                        disabled={loading}
+                    >
+
+                        {loading
+                            ? "Finding..."
+                            : "Find Best Matches"
+                        }
+
+                    </button>
+
+                </div>
+
+
+                {/* =========================
+                    RESULTS HEADER
+                ========================= */}
 
                 <div className="results-header">
 
                     <div>
 
                         <h2>
-                            Available Donors
+
+                            {smartMatching
+                                ? "Recommended Donors"
+                                : "Available Donors"
+                            }
+
                         </h2>
 
                         <p>
+
                             {donors.length} donor
-                            {donors.length !== 1 ? "s" : ""}
-                            found
+                            {donors.length !== 1
+                                ? "s"
+                                : ""
+                            }
+
+                            {" "}
+
+                            {smartMatching
+                                ? "recommended"
+                                : "found"
+                            }
+
                         </p>
 
                     </div>
 
+
                     <button
+                        type="button"
                         className="clear-button"
-                        onClick={() => {
-
-                            setBloodGroup("");
-                            setLocation("");
-
-                            setTimeout(() => {
-                                fetchDonors();
-                            }, 0);
-
-                        }}
+                        onClick={handleClear}
                     >
                         Clear Filters
                     </button>
@@ -209,35 +474,116 @@ function FindDonors() {
                 </div>
 
 
-                {/* ERROR */}
+                {/* =========================
+                    ERROR
+                ========================= */}
 
                 {error && (
+
                     <div className="donor-error">
                         {error}
                     </div>
+
                 )}
 
 
-                {/* LOADING */}
+                {/* =========================
+                    LOADING
+                ========================= */}
 
                 {loading && (
+
                     <div className="donor-loading">
-                        Finding donors...
+
+                        {smartMatching
+                            ? "Finding the best donors..."
+                            : "Finding donors..."
+                        }
+
                     </div>
+
                 )}
 
 
-                {/* DONORS */}
+                {/* =========================
+                    DONORS
+                ========================= */}
 
-                {!loading && donors.length > 0 && (
+                {!loading &&
+                    donors.length > 0 && (
 
                     <div className="donors-grid">
 
                         {donors.map((donor) => (
-                            <DonorCard
+
+                            <div
                                 key={donor.id}
-                                donor={donor}
-                            />
+                                className={
+                                    smartMatching
+                                        ? "recommended-donor"
+                                        : ""
+                                }
+                            >
+
+                                {/* Match Score */}
+
+                                {smartMatching && (
+
+                                    <div className="match-badge">
+
+                                        ⭐{" "}
+                                        {donor.matchScore ?? 0}%
+
+                                    </div>
+
+                                )}
+
+
+                                {/* Donor Card */}
+
+                                    <DonorCard
+                                        donor={donor}
+                                        smartMatch={smartMatching}
+                                    />
+
+                                {/* Smart Match Details */}
+
+                                {smartMatching && (
+
+                                    <div className="smart-donor-details">
+
+                                        <span>
+                                            📏{" "}
+                                            {donor.distance != null
+                                                ? Number(
+                                                    donor.distance
+                                                ).toFixed(2)
+                                                : "—"
+                                            } km
+                                        </span>
+
+
+                                        <span>
+                                            {donor.available
+                                                ? "🟢 Available"
+                                                : "🔴 Unavailable"
+                                            }
+                                        </span>
+
+
+                                        <span>
+                                            {donor.verified
+                                                ? "✓ Verified"
+                                                : "Not Verified"
+                                            }
+                                        </span>
+
+                                    </div>
+
+                                )}
+
+                            </div>
+
                         ))}
 
                     </div>
@@ -245,9 +591,13 @@ function FindDonors() {
                 )}
 
 
-                {/* EMPTY */}
+                {/* =========================
+                    EMPTY STATE
+                ========================= */}
 
-                {!loading && donors.length === 0 && !error && (
+                {!loading &&
+                    donors.length === 0 &&
+                    !error && (
 
                     <div className="empty-donors">
 
@@ -271,7 +621,9 @@ function FindDonors() {
             </main>
 
         </div>
+
     );
+
 }
 
 export default FindDonors;
