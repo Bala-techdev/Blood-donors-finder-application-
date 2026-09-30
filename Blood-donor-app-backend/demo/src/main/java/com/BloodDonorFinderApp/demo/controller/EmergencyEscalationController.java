@@ -17,28 +17,27 @@ public class EmergencyEscalationController {
         this.service = service;
     }
 
-    @GetMapping("/{requestId}/status")
-    public ResponseEntity<?> getStatus(
+    @PostMapping("/{requestId}/escalate")
+    public ResponseEntity<?> escalateRequest(
             @PathVariable Long requestId
     ) {
 
-        return ResponseEntity.ok(
-                java.util.Map.of(
-                        "requestId",
-                        requestId,
-                        "status",
-                        service.getEscalationStatus(requestId)
-                )
-        );
-    }
+        try {
 
-    @GetMapping("/{requestId}/accepted")
-    public ResponseEntity<?> getAcceptedDonors(
-            @PathVariable Long requestId
-    ) {
+            return ResponseEntity.ok(
+                    service.escalateRequest(requestId)
+            );
 
-        return ResponseEntity.ok(
-                service.getAcceptedDonors(requestId)
-        );
+        } catch (RuntimeException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            java.util.Map.of(
+                                    "message",
+                                    e.getMessage()
+                            )
+                    );
+        }
     }
 }

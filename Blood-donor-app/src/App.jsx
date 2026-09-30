@@ -10,6 +10,7 @@ import BloodRequests from "./pages/requests/BloodRequests";
 import Profile from "./pages/profile/Profile";
 import Notifications from "./pages/notifications/Notifications";
 import RequestDetails from "./pages/requests/RequestDetails";
+import EmergencyDashboard from "./pages/emergency/EmergencyDashboard";
 function App() {
     return (
         <BrowserRouter>
@@ -43,8 +44,13 @@ function App() {
                 <Route
                     path="/requests/:id"
                     element={<RequestDetails />}
-/>
+                />
+                <Route
+                    path="/emergency"
+                    element={<EmergencyDashboard />}
+                />
              </Routes>
+            
              
         </BrowserRouter>
     );

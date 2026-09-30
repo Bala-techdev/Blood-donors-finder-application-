@@ -30,6 +30,16 @@ function RequestDetails() {
     const [helpMessage, setHelpMessage] = useState("");
 
     // ==========================================
+    // DONATION PROGRESS
+    // ==========================================
+
+    const [acceptedDonorCount, setAcceptedDonorCount] =
+        useState(0);
+
+    const [responseLoading, setResponseLoading] =
+        useState(false);
+
+    // ==========================================
     // EMERGENCY PRIORITY
     // ==========================================
 
@@ -53,6 +63,50 @@ function RequestDetails() {
 
     const [expandedDonorId, setExpandedDonorId] = useState(null);
     const [reliabilityLoading, setReliabilityLoading] = useState(false);
+
+
+    // ==========================================
+    // LOAD DONATION PROGRESS
+    // ==========================================
+
+    const loadDonationProgress = async () => {
+
+        try {
+
+            setResponseLoading(true);
+
+            const response =
+                await api.get(
+                    `/request-responses/request/${id}`
+                );
+
+            const responses =
+                response.data || [];
+
+            const acceptedCount =
+                responses.filter(
+                    (item) =>
+                        item.response === "ACCEPTED"
+                ).length;
+
+            setAcceptedDonorCount(
+                acceptedCount
+            );
+
+        } catch (err) {
+
+            console.error(
+                "Error loading donation progress:",
+                err
+            );
+
+        } finally {
+
+            setResponseLoading(false);
+
+        }
+
+    };
 
 
     // ==========================================
@@ -149,6 +203,12 @@ function RequestDetails() {
                 );
 
             setBloodRequest(response.data);
+
+            // ======================================
+            // GET DONATION PROGRESS
+            // ======================================
+
+            await loadDonationProgress();
 
 
             // ======================================
@@ -486,6 +546,25 @@ function RequestDetails() {
 
                 `/request-responses/request/${bloodRequest.id}/user/${loggedInUser.id}`
 
+            );
+
+            // ======================================
+            // REFRESH DONATION PROGRESS
+            // ======================================
+
+            await loadDonationProgress();
+
+            // ======================================
+            // REFRESH REQUEST STATUS
+            // ======================================
+
+            const updatedRequest =
+                await api.get(
+                    `/requests/${bloodRequest.id}`
+                );
+
+            setBloodRequest(
+                updatedRequest.data
             );
 
 
@@ -826,6 +905,132 @@ function RequestDetails() {
 
                     </div>
 
+
+                </div>
+
+
+                {/* ======================================
+                    DONATION PROGRESS
+                ====================================== */}
+
+                <div className="donation-progress-section">
+
+                    <div className="donation-progress-header">
+
+                        <div>
+
+                            <span className="progress-label">
+
+                                🩸 DONATION PROGRESS
+
+                            </span>
+
+                            <h3>
+
+                                Donor Acceptance Status
+
+                            </h3>
+
+                        </div>
+
+                        <strong>
+
+                            {acceptedDonorCount} /{" "}
+
+                            {bloodRequest.units || 1}
+
+                        </strong>
+
+                    </div>
+
+
+                    {/* PROGRESS BAR */}
+
+                    <div className="donation-progress-bar">
+
+                        <div
+                            className="donation-progress-fill"
+                            style={{
+                                width: `${Math.min(
+                                    100,
+                                    (
+                                        acceptedDonorCount /
+                                        (bloodRequest.units || 1)
+                                    ) * 100
+                                )}%`
+                            }}
+                        />
+
+                    </div>
+
+
+                    {/* STATUS MESSAGE */}
+
+                    {bloodRequest.status === "FULFILLED" ? (
+
+                        <div className="donation-completed-message">
+
+                            <span>
+                                ✓
+                            </span>
+
+                            <div>
+
+                                <strong>
+                                    Blood Requirement Fulfilled
+                                </strong>
+
+                                <p>
+                                    Required donor units have been accepted.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    ) : (
+
+                        <div className="donation-pending-message">
+
+                            <span>
+                                ⏳
+                            </span>
+
+                            <div>
+
+                                <strong>
+
+                                    {Math.max(
+                                        0,
+                                        (bloodRequest.units || 1) -
+                                        acceptedDonorCount
+                                    )}
+
+                                    {" "}
+
+                                    more donor
+                                    {
+                                        (
+                                            (bloodRequest.units || 1) -
+                                            acceptedDonorCount
+                                        ) !== 1
+                                            ? "s"
+                                            : ""
+                                    }
+
+                                    {" "}needed
+
+                                </strong>
+
+                                <p>
+                                    Waiting for additional donors to accept this request.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    )}
 
                 </div>
 

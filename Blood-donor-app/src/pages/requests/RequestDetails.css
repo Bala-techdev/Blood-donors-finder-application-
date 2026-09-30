@@ -1880,3 +1880,16 @@
     }
 
 }
+/* ==========================================
+   FULFILLED REQUEST STATUS
+========================================== */
+
+.request-status.fulfilled {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+    font-weight: 800;
+}
+.request-status.fulfilled::before {
+    content: "✓ ";
+}
