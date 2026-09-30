@@ -1,5 +1,6 @@
 package com.BloodDonorFinderApp.demo.service;
 
+import com.BloodDonorFinderApp.demo.dto.DonorReliabilityResult;
 import com.BloodDonorFinderApp.demo.entity.BloodRequest;
 import com.BloodDonorFinderApp.demo.entity.DonorProfile;
 import com.BloodDonorFinderApp.demo.repository.DonorProfileRepository;
@@ -12,14 +13,38 @@ import java.util.List;
 @Service
 public class DonorMatchingService {
 
+    // =========================================================
+    // DEPENDENCIES
+    // =========================================================
+
     private final DonorProfileRepository donorProfileRepository;
 
     private final DonationEligibilityService
             donationEligibilityService;
 
+    private final DonorReliabilityService
+            donorReliabilityService;
+
+    private final MlPredictionService
+            mlPredictionService;
+
+
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
+
     public DonorMatchingService(
+
             DonorProfileRepository donorProfileRepository,
-            DonationEligibilityService donationEligibilityService
+
+            DonationEligibilityService
+                    donationEligibilityService,
+
+            DonorReliabilityService
+                    donorReliabilityService,
+
+            MlPredictionService
+                    mlPredictionService
     ) {
 
         this.donorProfileRepository =
@@ -27,6 +52,12 @@ public class DonorMatchingService {
 
         this.donationEligibilityService =
                 donationEligibilityService;
+
+        this.donorReliabilityService =
+                donorReliabilityService;
+
+        this.mlPredictionService =
+                mlPredictionService;
     }
 
 
@@ -102,7 +133,7 @@ public class DonorMatchingService {
 
 
             // -----------------------------------------------
-            // 6. CALCULATE EXPLAINABLE SCORE
+            // 6. EXISTING RULE-BASED SCORE
             // -----------------------------------------------
 
             MatchScoreBreakdown breakdown =
@@ -114,27 +145,188 @@ public class DonorMatchingService {
                     );
 
 
-            // -----------------------------------------------
-            // 7. ADD RESULT
-            // -----------------------------------------------
+            // =================================================
+            // 7. DONOR RELIABILITY
+            // =================================================
+
+            DonorReliabilityResult reliability =
+                    donorReliabilityService
+                            .calculateReliability(
+                                    donor.getId()
+                            );
+
+
+            // =================================================
+            // 8. PREPARE ML FEATURES
+            // =================================================
+
+            // Blood compatibility already passed above
+            int bloodCompatible = 1;
+
+
+            // Donor availability already passed
+            int available =
+                    donor.isAvailable()
+                            ? 1
+                            : 0;
+
+
+            // Eligibility already passed
+            int eligibleValue =
+                    eligible
+                            ? 1
+                            : 0;
+
+
+            // Donor verification
+            int verified =
+                    donor.isVerified()
+                            ? 1
+                            : 0;
+
+
+            // Total previous donations
+            int totalDonations =
+                    donor.getTotalDonations() == null
+                            ? 0
+                            : donor.getTotalDonations();
+
+
+            // =================================================
+            // 9. URGENCY SCORE FOR ML
+            // =================================================
+
+            double urgencyScore = 50.0;
+
+
+            if ("EMERGENCY".equalsIgnoreCase(
+                    request.getUrgency()
+            )) {
+
+                urgencyScore = 90.0;
+
+            } else if ("URGENT".equalsIgnoreCase(
+                    request.getUrgency()
+            )) {
+
+                urgencyScore = 75.0;
+
+            } else if ("NORMAL".equalsIgnoreCase(
+                    request.getUrgency()
+            )) {
+
+                urgencyScore = 50.0;
+            }
+
+
+            // =================================================
+            // 10. CALL FASTAPI ML SERVICE
+            // =================================================
+
+            double responseProbability =
+                    mlPredictionService
+                            .predictResponseProbability(
+
+                                    bloodCompatible,
+
+                                    distance,
+
+                                    available,
+
+                                    eligibleValue,
+
+                                    verified,
+
+                                    totalDonations,
+
+                                    reliability
+                                            .getTotalRecommendations(),
+
+                                    reliability
+                                            .getAcceptedCount(),
+
+                                    reliability
+                                            .getDeclinedCount(),
+
+                                    reliability
+                                            .getResponseRate(),
+
+                                    reliability
+                                            .getAcceptanceRate(),
+
+                                    urgencyScore
+                            );
+
+
+            // =================================================
+            // 11. CALCULATE FINAL SMARTBLOOD SCORE
+            // =================================================
+
+            double ruleScore =
+                    breakdown.getTotalScore();
+
+
+            /*
+             * Existing deterministic matching:
+             * 85%
+             *
+             * ML response prediction:
+             * 15%
+             */
+
+            double finalScore =
+                    (ruleScore * 0.85)
+                            +
+                            (responseProbability * 0.15);
+
+
+            // Keep score between 0 and 100
+            finalScore =
+                    Math.min(
+                            100.0,
+                            Math.max(
+                                    0.0,
+                                    finalScore
+                            )
+                    );
+
+
+            // Round to one decimal place
+            finalScore =
+                    Math.round(
+                            finalScore * 10.0
+                    ) / 10.0;
+
+
+            // =================================================
+            // 12. ADD MATCH RESULT
+            // =================================================
 
             matches.add(
 
                     new DonorMatchResult(
+
                             donor,
-                            breakdown.getTotalScore(),
+
+                            finalScore,
+
                             distance,
+
                             eligible,
+
                             daysSinceLastDonation,
-                            breakdown
+
+                            breakdown,
+
+                            responseProbability
                     )
             );
         }
 
 
-        // -----------------------------------------------
-        // HIGHEST SCORE FIRST
-        // -----------------------------------------------
+        // =====================================================
+        // HIGHEST FINAL SCORE FIRST
+        // =====================================================
 
         matches.sort(
                 Comparator.comparingDouble(
@@ -170,6 +362,7 @@ public class DonorMatchingService {
                 donorGroup.trim().toUpperCase();
 
 
+        // Exact match
         if (recipientGroup.equals(donorGroup)) {
             return true;
         }
@@ -178,39 +371,54 @@ public class DonorMatchingService {
         switch (recipientGroup) {
 
             case "O-":
+
                 return donorGroup.equals("O-");
 
+
             case "O+":
+
                 return donorGroup.equals("O+")
                         || donorGroup.equals("O-");
 
+
             case "A-":
+
                 return donorGroup.equals("A-")
                         || donorGroup.equals("O-");
 
+
             case "A+":
+
                 return donorGroup.equals("A+")
                         || donorGroup.equals("A-")
                         || donorGroup.equals("O+")
                         || donorGroup.equals("O-");
 
+
             case "B-":
+
                 return donorGroup.equals("B-")
                         || donorGroup.equals("O-");
 
+
             case "B+":
+
                 return donorGroup.equals("B+")
                         || donorGroup.equals("B-")
                         || donorGroup.equals("O+")
                         || donorGroup.equals("O-");
 
+
             case "AB-":
+
                 return donorGroup.equals("AB-")
                         || donorGroup.equals("A-")
                         || donorGroup.equals("B-")
                         || donorGroup.equals("O-");
 
+
             case "AB+":
+
                 return donorGroup.equals("AB+")
                         || donorGroup.equals("AB-")
                         || donorGroup.equals("A+")
@@ -220,7 +428,9 @@ public class DonorMatchingService {
                         || donorGroup.equals("O+")
                         || donorGroup.equals("O-");
 
+
             default:
+
                 return false;
         }
     }
@@ -231,23 +441,32 @@ public class DonorMatchingService {
     // =========================================================
 
     private MatchScoreBreakdown calculateScoreBreakdown(
+
             BloodRequest request,
+
             DonorProfile donor,
+
             double distance,
+
             boolean eligible
     ) {
 
         double compatibilityScore = 0;
+
         double availabilityScore = 0;
+
         double verificationScore = 0;
+
         double experienceScore = 0;
+
         double distanceScore = 0;
+
         double eligibilityScore = 0;
 
 
-        // -----------------------------------------------
+        // =====================================================
         // BLOOD COMPATIBILITY - MAX 40
-        // -----------------------------------------------
+        // =====================================================
 
         if (request.getBloodGroup()
                 .equalsIgnoreCase(
@@ -262,9 +481,9 @@ public class DonorMatchingService {
         }
 
 
-        // -----------------------------------------------
+        // =====================================================
         // AVAILABILITY - MAX 10
-        // -----------------------------------------------
+        // =====================================================
 
         if (donor.isAvailable()) {
 
@@ -272,9 +491,9 @@ public class DonorMatchingService {
         }
 
 
-        // -----------------------------------------------
+        // =====================================================
         // VERIFICATION - MAX 10
-        // -----------------------------------------------
+        // =====================================================
 
         if (donor.isVerified()) {
 
@@ -282,9 +501,9 @@ public class DonorMatchingService {
         }
 
 
-        // -----------------------------------------------
+        // =====================================================
         // DONATION EXPERIENCE - MAX 10
-        // -----------------------------------------------
+        // =====================================================
 
         if (donor.getTotalDonations() != null) {
 
@@ -305,9 +524,9 @@ public class DonorMatchingService {
         }
 
 
-        // -----------------------------------------------
+        // =====================================================
         // DISTANCE - MAX 15
-        // -----------------------------------------------
+        // =====================================================
 
         if (distance <= 5) {
 
@@ -331,15 +550,19 @@ public class DonorMatchingService {
         }
 
 
-        // -----------------------------------------------
+        // =====================================================
         // ELIGIBILITY - MAX 15
-        // -----------------------------------------------
+        // =====================================================
 
         if (eligible) {
 
             eligibilityScore = 15;
         }
 
+
+        // =====================================================
+        // TOTAL RULE SCORE
+        // =====================================================
 
         double totalScore =
                 compatibilityScore
@@ -351,16 +574,26 @@ public class DonorMatchingService {
 
 
         totalScore =
-                Math.min(totalScore, 100);
+                Math.min(
+                        100,
+                        totalScore
+                );
 
 
         return new MatchScoreBreakdown(
+
                 compatibilityScore,
+
                 availabilityScore,
+
                 verificationScore,
+
                 experienceScore,
+
                 distanceScore,
+
                 eligibilityScore,
+
                 totalScore
         );
     }
@@ -371,7 +604,9 @@ public class DonorMatchingService {
     // =========================================================
 
     private double calculateDistance(
+
             BloodRequest request,
+
             DonorProfile donor
     ) {
 
@@ -417,23 +652,41 @@ public class DonorMatchingService {
 
 
         double a =
-                Math.sin(latitudeDifference / 2)
-                        * Math.sin(latitudeDifference / 2)
+
+                Math.sin(
+                        latitudeDifference / 2
+                )
+                        *
+                        Math.sin(
+                                latitudeDifference / 2
+                        )
 
                         +
 
-                        Math.cos(requestLatitude)
-                                * Math.cos(donorLatitude)
+                        Math.cos(
+                                requestLatitude
+                        )
+                                *
+                                Math.cos(
+                                        donorLatitude
+                                )
 
                                 *
 
-                                Math.sin(longitudeDifference / 2)
-                                * Math.sin(longitudeDifference / 2);
+                                Math.sin(
+                                        longitudeDifference / 2
+                                )
+                                *
+                                Math.sin(
+                                        longitudeDifference / 2
+                                );
 
 
         double c =
                 2 * Math.atan2(
+
                         Math.sqrt(a),
+
                         Math.sqrt(1 - a)
                 );
 
@@ -455,11 +708,17 @@ public class DonorMatchingService {
     public static class MatchScoreBreakdown {
 
         private double compatibilityScore;
+
         private double availabilityScore;
+
         private double verificationScore;
+
         private double experienceScore;
+
         private double distanceScore;
+
         private double eligibilityScore;
+
         private double totalScore;
 
 
@@ -468,12 +727,19 @@ public class DonorMatchingService {
 
 
         public MatchScoreBreakdown(
+
                 double compatibilityScore,
+
                 double availabilityScore,
+
                 double verificationScore,
+
                 double experienceScore,
+
                 double distanceScore,
+
                 double eligibilityScore,
+
                 double totalScore
         ) {
 
@@ -501,84 +767,105 @@ public class DonorMatchingService {
 
 
         public double getCompatibilityScore() {
+
             return compatibilityScore;
         }
+
 
         public void setCompatibilityScore(
                 double compatibilityScore
         ) {
+
             this.compatibilityScore =
                     compatibilityScore;
         }
 
 
         public double getAvailabilityScore() {
+
             return availabilityScore;
         }
+
 
         public void setAvailabilityScore(
                 double availabilityScore
         ) {
+
             this.availabilityScore =
                     availabilityScore;
         }
 
 
         public double getVerificationScore() {
+
             return verificationScore;
         }
+
 
         public void setVerificationScore(
                 double verificationScore
         ) {
+
             this.verificationScore =
                     verificationScore;
         }
 
 
         public double getExperienceScore() {
+
             return experienceScore;
         }
+
 
         public void setExperienceScore(
                 double experienceScore
         ) {
+
             this.experienceScore =
                     experienceScore;
         }
 
 
         public double getDistanceScore() {
+
             return distanceScore;
         }
+
 
         public void setDistanceScore(
                 double distanceScore
         ) {
+
             this.distanceScore =
                     distanceScore;
         }
 
 
         public double getEligibilityScore() {
+
             return eligibilityScore;
         }
+
 
         public void setEligibilityScore(
                 double eligibilityScore
         ) {
+
             this.eligibilityScore =
                     eligibilityScore;
         }
 
 
         public double getTotalScore() {
+
             return totalScore;
         }
+
 
         public void setTotalScore(
                 double totalScore
         ) {
+
             this.totalScore =
                     totalScore;
         }
@@ -603,18 +890,28 @@ public class DonorMatchingService {
 
         private MatchScoreBreakdown scoreBreakdown;
 
+        private double responseProbability;
+
 
         public DonorMatchResult() {
         }
 
 
         public DonorMatchResult(
+
                 DonorProfile donor,
+
                 double score,
+
                 double distance,
+
                 boolean eligible,
+
                 long daysSinceLastDonation,
-                MatchScoreBreakdown scoreBreakdown
+
+                MatchScoreBreakdown scoreBreakdown,
+
+                double responseProbability
         ) {
 
             this.donor = donor;
@@ -630,10 +927,18 @@ public class DonorMatchingService {
 
             this.scoreBreakdown =
                     scoreBreakdown;
+
+            this.responseProbability =
+                    responseProbability;
         }
 
 
+        // =====================================================
+        // DONOR
+        // =====================================================
+
         public DonorProfile getDonor() {
+
             return donor;
         }
 
@@ -641,11 +946,17 @@ public class DonorMatchingService {
         public void setDonor(
                 DonorProfile donor
         ) {
+
             this.donor = donor;
         }
 
 
+        // =====================================================
+        // FINAL SCORE
+        // =====================================================
+
         public double getScore() {
+
             return score;
         }
 
@@ -653,11 +964,17 @@ public class DonorMatchingService {
         public void setScore(
                 double score
         ) {
+
             this.score = score;
         }
 
 
+        // =====================================================
+        // DISTANCE
+        // =====================================================
+
         public double getDistance() {
+
             return distance;
         }
 
@@ -665,11 +982,17 @@ public class DonorMatchingService {
         public void setDistance(
                 double distance
         ) {
+
             this.distance = distance;
         }
 
 
+        // =====================================================
+        // ELIGIBILITY
+        // =====================================================
+
         public boolean isEligible() {
+
             return eligible;
         }
 
@@ -677,11 +1000,17 @@ public class DonorMatchingService {
         public void setEligible(
                 boolean eligible
         ) {
+
             this.eligible = eligible;
         }
 
 
+        // =====================================================
+        // DAYS SINCE LAST DONATION
+        // =====================================================
+
         public long getDaysSinceLastDonation() {
+
             return daysSinceLastDonation;
         }
 
@@ -689,21 +1018,53 @@ public class DonorMatchingService {
         public void setDaysSinceLastDonation(
                 long daysSinceLastDonation
         ) {
+
             this.daysSinceLastDonation =
                     daysSinceLastDonation;
         }
 
 
-        public MatchScoreBreakdown getScoreBreakdown() {
+        // =====================================================
+        // SCORE BREAKDOWN
+        // =====================================================
+
+        public MatchScoreBreakdown
+        getScoreBreakdown() {
+
             return scoreBreakdown;
         }
 
 
         public void setScoreBreakdown(
-                MatchScoreBreakdown scoreBreakdown
+
+                MatchScoreBreakdown
+                        scoreBreakdown
+
         ) {
+
             this.scoreBreakdown =
                     scoreBreakdown;
+        }
+
+
+        // =====================================================
+        // ML RESPONSE PROBABILITY
+        // =====================================================
+
+        public double getResponseProbability() {
+
+            return responseProbability;
+        }
+
+
+        public void setResponseProbability(
+
+                double responseProbability
+
+        ) {
+
+            this.responseProbability =
+                    responseProbability;
         }
     }
 }

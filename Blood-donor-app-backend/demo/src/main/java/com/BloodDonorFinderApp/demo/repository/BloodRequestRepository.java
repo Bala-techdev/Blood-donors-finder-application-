@@ -17,4 +17,5 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, Long
     );
 
     List<BloodRequest> findByRequesterId(Long requesterId);
+    long countByIdAndStatus(Long id, String status);
 }

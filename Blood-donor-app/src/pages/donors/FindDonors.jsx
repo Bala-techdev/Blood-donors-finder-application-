@@ -139,29 +139,34 @@ function FindDonors() {
          * Convert it into the structure
          * expected by DonorCard.
          */
+const recommendedDonors =
+    response.data.map((item) => {
 
-        const recommendedDonors =
-            response.data.map((item) => {
+        return {
 
-                return {
+            // Existing donor information
+            ...item.donor,
 
-                    // Existing donor information
-                    ...item.donor,
+            // Donor name
+            name:
+                item.donor.user?.name ||
+                "Blood Donor",
 
+            // Final SmartBlood score
+            matchScore:
+                item.score,
 
-                    // User information
-                    name: item.donor.user?.name || "Blood Donor",
+            // Distance
+            distance:
+                item.distance,
 
+            // ML prediction
+            responseProbability:
+                item.responseProbability
 
-                    // Smart matching information
-                    matchScore: item.score,
+        };
 
-                    distance: item.distance
-
-                };
-
-            });
-
+    });
 
         console.log(
             "Processed Recommended Donors:",

@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import "./DonorCard.css";
 
-function DonorCard({ donor, smartMatch = false }) {
+function DonorCard({
+    donor,
+    smartMatch = false
+}) {
 
     const donorName =
         donor.user?.name ||
@@ -19,9 +22,11 @@ function DonorCard({ donor, smartMatch = false }) {
             <div className="donor-card-top">
 
                 <div className="donor-avatar">
+
                     {donorName
                         .charAt(0)
                         .toUpperCase()}
+
                 </div>
 
 
@@ -52,7 +57,7 @@ function DonorCard({ donor, smartMatch = false }) {
 
 
             {/* =========================
-                SMART MATCH SCORE
+                SMARTBLOOD SCORE
             ========================= */}
 
             {smartMatch && (
@@ -62,11 +67,20 @@ function DonorCard({ donor, smartMatch = false }) {
                     <div className="smart-score-label">
 
                         <span>
-                            Smart Match
+                            🧠 SmartBlood Score
                         </span>
 
                         <strong>
-                            {donor.matchScore ?? 0}%
+
+                            {donor.matchScore != null
+                                ? Number(
+                                    donor.matchScore
+                                ).toFixed(1)
+                                : "N/A"}
+
+                            {donor.matchScore != null &&
+                                "/100"}
+
                         </strong>
 
                     </div>
@@ -77,11 +91,76 @@ function DonorCard({ donor, smartMatch = false }) {
                         <div
                             className="score-progress"
                             style={{
-                                width: `${donor.matchScore ?? 0}%`
+                                width: `${Math.min(
+                                    100,
+                                    Math.max(
+                                        0,
+                                        Number(
+                                            donor.matchScore
+                                        ) || 0
+                                    )
+                                )}%`
                             }}
                         />
 
                     </div>
+
+                </div>
+
+            )}
+
+
+            {/* =========================
+                AI RESPONSE PROBABILITY
+            ========================= */}
+
+            {smartMatch &&
+                donor.responseProbability != null && (
+
+                <div className="ai-response-section">
+
+                    <div className="ai-response-header">
+
+                        <span>
+                            🤖 AI Response Probability
+                        </span>
+
+                        <strong>
+
+                            {Number(
+                                donor.responseProbability
+                            ).toFixed(1)}
+
+                            %
+
+                        </strong>
+
+                    </div>
+
+
+                    <div className="ai-response-bar">
+
+                        <div
+                            className="ai-response-progress"
+                            style={{
+                                width: `${Math.min(
+                                    100,
+                                    Math.max(
+                                        0,
+                                        Number(
+                                            donor.responseProbability
+                                        ) || 0
+                                    )
+                                )}%`
+                            }}
+                        />
+
+                    </div>
+
+
+                    <small>
+                        Estimated likelihood of donor response
+                    </small>
 
                 </div>
 
@@ -101,7 +180,9 @@ function DonorCard({ donor, smartMatch = false }) {
                     </span>
 
                     <strong className="blood-group-badge">
+
                         {donor.bloodGroup}
+
                     </strong>
 
                 </div>
@@ -114,7 +195,9 @@ function DonorCard({ donor, smartMatch = false }) {
                     </span>
 
                     <strong>
+
                         {donor.totalDonations || 0}
+
                     </strong>
 
                 </div>
@@ -148,6 +231,8 @@ function DonorCard({ donor, smartMatch = false }) {
 
                 <div className="smart-match-details">
 
+                    {/* DISTANCE */}
+
                     <div className="match-detail">
 
                         <span>
@@ -161,12 +246,14 @@ function DonorCard({ donor, smartMatch = false }) {
                             </small>
 
                             <strong>
+
                                 {donor.distance != null
                                     ? Number(
                                         donor.distance
                                     ).toFixed(2)
                                     : "—"
                                 } km
+
                             </strong>
 
                         </div>
@@ -174,13 +261,17 @@ function DonorCard({ donor, smartMatch = false }) {
                     </div>
 
 
+                    {/* STATUS */}
+
                     <div className="match-detail">
 
                         <span>
+
                             {donor.available
                                 ? "🟢"
                                 : "🔴"
                             }
+
                         </span>
 
                         <div>
@@ -190,10 +281,12 @@ function DonorCard({ donor, smartMatch = false }) {
                             </small>
 
                             <strong>
+
                                 {donor.available
                                     ? "Available"
                                     : "Unavailable"
                                 }
+
                             </strong>
 
                         </div>
@@ -242,6 +335,7 @@ function DonorCard({ donor, smartMatch = false }) {
             </div>
 
         </div>
+
     );
 }
 
