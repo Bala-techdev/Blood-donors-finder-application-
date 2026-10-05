@@ -230,4 +230,29 @@ public class DonorController {
                     );
         }
     }
+
+
+    // ==========================================
+// FIND NEARBY DONORS
+// ==========================================
+
+    @GetMapping("/nearby")
+    public ResponseEntity<List<DonorProfile>> findNearbyDonors(
+
+            @RequestParam double latitude,
+
+            @RequestParam double longitude,
+
+            @RequestParam(defaultValue = "10")
+            double radius
+    ) {
+
+        return ResponseEntity.ok(
+                donorService.findNearbyDonors(
+                        latitude,
+                        longitude,
+                        radius
+                )
+        );
+    }
 }

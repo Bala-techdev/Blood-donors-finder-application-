@@ -17,11 +17,9 @@ import java.util.List;
 public class DonorRequestResponseService {
 
     private final DonorRequestResponseRepository responseRepository;
-
     private final BloodRequestRepository bloodRequestRepository;
-
     private final DonorProfileRepository donorProfileRepository;
-
+    private final NotificationService notificationService;
 
     // ==========================================
     // CONSTRUCTOR
@@ -30,16 +28,13 @@ public class DonorRequestResponseService {
     public DonorRequestResponseService(
             DonorRequestResponseRepository responseRepository,
             BloodRequestRepository bloodRequestRepository,
-            DonorProfileRepository donorProfileRepository
-    ) {
-        this.responseRepository =
-                responseRepository;
+            DonorProfileRepository donorProfileRepository,
+            NotificationService notificationService) {
 
-        this.bloodRequestRepository =
-                bloodRequestRepository;
-
-        this.donorProfileRepository =
-                donorProfileRepository;
+        this.responseRepository = responseRepository;
+        this.bloodRequestRepository = bloodRequestRepository;
+        this.donorProfileRepository = donorProfileRepository;
+        this.notificationService = notificationService;
     }
 
 
@@ -49,21 +44,14 @@ public class DonorRequestResponseService {
 
     public List<DonorRequestResponse> saveRecommendedDonors(
             BloodRequest request,
-            List<DonorMatchingService.DonorMatchResult> matches
-    ) {
+            List<DonorMatchingService.DonorMatchResult> matches) {
 
         List<DonorRequestResponse> recommendations =
                 new ArrayList<>();
 
+        for (DonorMatchingService.DonorMatchResult match : matches) {
 
-        for (
-                DonorMatchingService.DonorMatchResult match
-                : matches
-        ) {
-
-            DonorProfile donor =
-                    match.getDonor();
-
+            DonorProfile donor = match.getDonor();
 
             // ------------------------------------------
             // CHECK DUPLICATE RECOMMENDATION
@@ -77,11 +65,9 @@ public class DonorRequestResponseService {
                             )
                             .isPresent();
 
-
             if (alreadyExists) {
                 continue;
             }
-
 
             // ------------------------------------------
             // CREATE RECOMMENDATION
@@ -90,39 +76,44 @@ public class DonorRequestResponseService {
             DonorRequestResponse recommendation =
                     new DonorRequestResponse();
 
+            recommendation.setBloodRequest(request);
 
-            recommendation.setBloodRequest(
-                    request
-            );
+            recommendation.setDonor(donor);
 
-            recommendation.setDonor(
-                    donor
-            );
+            recommendation.setResponse("PENDING");
 
-            recommendation.setResponse(
-                    "PENDING"
-            );
+            recommendation.setMatchScore(match.getScore());
 
-            recommendation.setMatchScore(
-                    match.getScore()
-            );
+            recommendation.setDistance(match.getDistance());
 
-            recommendation.setDistance(
-                    match.getDistance()
-            );
+            recommendation.setRecommendedAt(LocalDateTime.now());
 
-            recommendation.setRecommendedAt(
-                    LocalDateTime.now()
-            );
+            DonorRequestResponse savedRecommendation =
+                    responseRepository.save(recommendation);
 
+            recommendations.add(savedRecommendation);
 
-            recommendations.add(
-                    responseRepository.save(
-                            recommendation
-                    )
-            );
+            // ------------------------------------------
+            // NOTIFY DONOR
+            // ------------------------------------------
+
+            if (donor.getUser() != null) {
+
+                notificationService.createNotification(
+                        donor.getUser().getId(),
+                        "DONOR_RECOMMENDATION",
+                        "New Blood Request",
+                        "You have been recommended for a "
+                                + request.getBloodGroup()
+                                + " blood request for "
+                                + request.getPatientName()
+                                + " at "
+                                + request.getHospitalName()
+                                + ".",
+                        request.getId()
+                );
+            }
         }
-
 
         return recommendations;
     }
@@ -134,8 +125,7 @@ public class DonorRequestResponseService {
 
     public DonorRequestResponse respondToRequest(
             Long requestId,
-            Long userId
-    ) {
+            Long userId) {
 
         // ==========================================
         // 1. FIND BLOOD REQUEST
@@ -155,11 +145,7 @@ public class DonorRequestResponseService {
         // 2. CHECK REQUEST STATUS
         // ==========================================
 
-        if (
-                !"PENDING".equalsIgnoreCase(
-                        request.getStatus()
-                )
-        ) {
+        if (!"PENDING".equalsIgnoreCase(request.getStatus())) {
 
             throw new RuntimeException(
                     "This blood request is no longer accepting responses"
@@ -212,32 +198,19 @@ public class DonorRequestResponseService {
 
         if (response == null) {
 
-            response =
-                    new DonorRequestResponse();
+            response = new DonorRequestResponse();
 
-            response.setBloodRequest(
-                    request
-            );
+            response.setBloodRequest(request);
 
-            response.setDonor(
-                    donor
-            );
+            response.setDonor(donor);
 
-            response.setMatchScore(
-                    0.0
-            );
+            response.setMatchScore(0.0);
 
-            response.setDistance(
-                    999.0
-            );
+            response.setDistance(999.0);
 
-            response.setRecommendedAt(
-                    LocalDateTime.now()
-            );
+            response.setRecommendedAt(LocalDateTime.now());
 
-            response.setResponse(
-                    "PENDING"
-            );
+            response.setResponse("PENDING");
         }
 
 
@@ -245,11 +218,7 @@ public class DonorRequestResponseService {
         // 7. PREVENT DUPLICATE RESPONSE
         // ==========================================
 
-        if (
-                "ACCEPTED".equalsIgnoreCase(
-                        response.getResponse()
-                )
-        ) {
+        if ("ACCEPTED".equalsIgnoreCase(response.getResponse())) {
 
             throw new RuntimeException(
                     "You have already accepted this request"
@@ -257,11 +226,7 @@ public class DonorRequestResponseService {
         }
 
 
-        if (
-                "DECLINED".equalsIgnoreCase(
-                        response.getResponse()
-                )
-        ) {
+        if ("DECLINED".equalsIgnoreCase(response.getResponse())) {
 
             throw new RuntimeException(
                     "You have already declined this request"
@@ -273,13 +238,9 @@ public class DonorRequestResponseService {
         // 8. ACCEPT REQUEST
         // ==========================================
 
-        response.setResponse(
-                "ACCEPTED"
-        );
+        response.setResponse("ACCEPTED");
 
-        response.setRespondedAt(
-                LocalDateTime.now()
-        );
+        response.setRespondedAt(LocalDateTime.now());
 
 
         // ==========================================
@@ -287,22 +248,42 @@ public class DonorRequestResponseService {
         // ==========================================
 
         DonorRequestResponse savedResponse =
-                responseRepository.save(
-                        response
-                );
+                responseRepository.save(response);
 
 
         // ==========================================
-        // 10. CHECK AUTOMATIC FULFILLMENT
+        // 10. NOTIFY REQUESTER
         // ==========================================
 
-        checkAndUpdateFulfillment(
-                request
-        );
+        if (request.getRequester() != null) {
+
+            String donorName =
+                    donor.getUser() != null
+                            ? donor.getUser().getName()
+                            : "A donor";
+
+            notificationService.createNotification(
+                    request.getRequester().getId(),
+                    "DONOR_ACCEPTED",
+                    "Donor Accepted Your Request",
+                    donorName
+                            + " accepted your blood request for "
+                            + request.getPatientName()
+                            + ".",
+                    request.getId()
+            );
+        }
 
 
         // ==========================================
-        // 11. RETURN RESPONSE
+        // 11. CHECK AUTOMATIC FULFILLMENT
+        // ==========================================
+
+        checkAndUpdateFulfillment(request);
+
+
+        // ==========================================
+        // 12. RETURN RESPONSE
         // ==========================================
 
         return savedResponse;
@@ -314,8 +295,7 @@ public class DonorRequestResponseService {
     // =========================================================
 
     private void checkAndUpdateFulfillment(
-            BloodRequest request
-    ) {
+            BloodRequest request) {
 
         // ------------------------------------------
         // COUNT ACCEPTED DONORS
@@ -346,17 +326,35 @@ public class DonorRequestResponseService {
         // 1 ACCEPTED DONOR = 1 UNIT
         // ------------------------------------------
 
-        if (
-                acceptedCount >= requiredUnits
-        ) {
+        if (acceptedCount >= requiredUnits) {
 
-            request.setStatus(
-                    "FULFILLED"
-            );
+            // Prevent duplicate fulfillment notification
+            boolean wasAlreadyFulfilled =
+                    "FULFILLED".equalsIgnoreCase(
+                            request.getStatus()
+                    );
 
-            bloodRequestRepository.save(
-                    request
-            );
+            request.setStatus("FULFILLED");
+
+            bloodRequestRepository.save(request);
+
+            // ------------------------------------------
+            // NOTIFY REQUESTER
+            // ------------------------------------------
+
+            if (!wasAlreadyFulfilled
+                    && request.getRequester() != null) {
+
+                notificationService.createNotification(
+                        request.getRequester().getId(),
+                        "REQUEST_FULFILLED",
+                        "Blood Request Fulfilled",
+                        "Your blood request for "
+                                + request.getPatientName()
+                                + " has been fulfilled.",
+                        request.getId()
+                );
+            }
         }
     }
 
@@ -367,8 +365,7 @@ public class DonorRequestResponseService {
 
     public DonorRequestResponse declineRequest(
             Long requestId,
-            Long userId
-    ) {
+            Long userId) {
 
         // ==========================================
         // 1. FIND BLOOD REQUEST
@@ -388,11 +385,7 @@ public class DonorRequestResponseService {
         // 2. CHECK REQUEST STATUS
         // ==========================================
 
-        if (
-                !"PENDING".equalsIgnoreCase(
-                        request.getStatus()
-                )
-        ) {
+        if (!"PENDING".equalsIgnoreCase(request.getStatus())) {
 
             throw new RuntimeException(
                     "This blood request is no longer accepting responses"
@@ -435,11 +428,7 @@ public class DonorRequestResponseService {
         // 5. CHECK ALREADY RESPONDED
         // ==========================================
 
-        if (
-                "ACCEPTED".equalsIgnoreCase(
-                        response.getResponse()
-                )
-        ) {
+        if ("ACCEPTED".equalsIgnoreCase(response.getResponse())) {
 
             throw new RuntimeException(
                     "You have already accepted this request"
@@ -447,11 +436,7 @@ public class DonorRequestResponseService {
         }
 
 
-        if (
-                "DECLINED".equalsIgnoreCase(
-                        response.getResponse()
-                )
-        ) {
+        if ("DECLINED".equalsIgnoreCase(response.getResponse())) {
 
             throw new RuntimeException(
                     "You have already declined this request"
@@ -463,22 +448,44 @@ public class DonorRequestResponseService {
         // 6. DECLINE REQUEST
         // ==========================================
 
-        response.setResponse(
-                "DECLINED"
-        );
+        response.setResponse("DECLINED");
 
-        response.setRespondedAt(
-                LocalDateTime.now()
-        );
+        response.setRespondedAt(LocalDateTime.now());
 
 
         // ==========================================
         // 7. SAVE
         // ==========================================
 
-        return responseRepository.save(
-                response
-        );
+        DonorRequestResponse savedResponse =
+                responseRepository.save(response);
+
+
+        // ==========================================
+        // 8. NOTIFY REQUESTER
+        // ==========================================
+
+        if (request.getRequester() != null) {
+
+            String donorName =
+                    donor.getUser() != null
+                            ? donor.getUser().getName()
+                            : "A donor";
+
+            notificationService.createNotification(
+                    request.getRequester().getId(),
+                    "DONOR_DECLINED",
+                    "Donor Declined Request",
+                    donorName
+                            + " declined your blood request for "
+                            + request.getPatientName()
+                            + ".",
+                    request.getId()
+            );
+        }
+
+
+        return savedResponse;
     }
 
 
@@ -490,8 +497,7 @@ public class DonorRequestResponseService {
             Long requestId,
             Long donorId,
             Double matchScore,
-            Double distance
-    ) {
+            Double distance) {
 
         BloodRequest request =
                 bloodRequestRepository
@@ -522,41 +528,63 @@ public class DonorRequestResponseService {
                         .orElse(null);
 
 
+        // Keep track of whether this is a new recommendation
+        boolean newRecommendation = false;
+
+
         if (response == null) {
 
-            response =
-                    new DonorRequestResponse();
+            response = new DonorRequestResponse();
 
-            response.setBloodRequest(
-                    request
-            );
+            response.setBloodRequest(request);
 
-            response.setDonor(
-                    donor
-            );
+            response.setDonor(donor);
 
-            response.setResponse(
-                    "PENDING"
-            );
+            response.setResponse("PENDING");
 
-            response.setRecommendedAt(
-                    LocalDateTime.now()
+            response.setRecommendedAt(LocalDateTime.now());
+
+            newRecommendation = true;
+        }
+
+
+        response.setMatchScore(matchScore);
+
+        response.setDistance(distance);
+
+
+        // ==========================================
+        // SAVE
+        // ==========================================
+
+        DonorRequestResponse savedResponse =
+                responseRepository.save(response);
+
+
+        // ==========================================
+        // NOTIFY DONOR ONLY FOR NEW RECOMMENDATION
+        // ==========================================
+
+        if (newRecommendation
+                && donor.getUser() != null) {
+
+            notificationService.createNotification(
+                    donor.getUser().getId(),
+                    "DONOR_RECOMMENDATION",
+                    "New Blood Request",
+                    "You have been recommended for a "
+                            + request.getBloodGroup()
+                            + " blood request for "
+                            + request.getPatientName()
+                            + " at "
+                            + request.getHospitalName()
+                            + ".",
+                    request.getId()
             );
         }
 
 
-        response.setMatchScore(
-                matchScore
-        );
-
-        response.setDistance(
-                distance
-        );
-
-
-        return responseRepository.save(
-                response
-        );
+        return savedResponse;
     }
 
 
@@ -566,8 +594,7 @@ public class DonorRequestResponseService {
 
     public List<DonorRequestResponse>
     getResponsesForRequest(
-            Long requestId
-    ) {
+            Long requestId) {
 
         return responseRepository
                 .findByBloodRequestId(
@@ -582,8 +609,7 @@ public class DonorRequestResponseService {
 
     public List<DonorRequestResponse>
     getResponsesByDonor(
-            Long donorId
-    ) {
+            Long donorId) {
 
         return responseRepository
                 .findByDonorId(

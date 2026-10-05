@@ -3,6 +3,7 @@ package com.BloodDonorFinderApp.demo.service;
 import com.BloodDonorFinderApp.demo.entity.User;
 import com.BloodDonorFinderApp.demo.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,8 +13,14 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder
+    ) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public User createUser(User user) {
@@ -21,6 +28,10 @@ public class UserService {
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("Email already registered");
         }
+
+        user.setPassword(
+                passwordEncoder.encode(user.getPassword())
+        );
 
         return userRepository.save(user);
     }

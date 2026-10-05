@@ -10,6 +10,113 @@ function Notifications() {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [userId, setUserId] = useState(null);
+
+    // ==========================================
+    // GET ICON BASED ON NOTIFICATION TYPE
+    // ==========================================
+
+    const getNotificationIcon = (type) => {
+
+        switch (type) {
+
+            case "DONOR_RECOMMENDATION":
+                return "🩸";
+
+            case "DONOR_ACCEPTED":
+                return "❤️";
+
+            case "DONOR_DECLINED":
+                return "❌";
+
+            case "REQUEST_FULFILLED":
+                return "✅";
+
+            default:
+                return "🔔";
+        }
+    };
+
+
+    // ==========================================
+    // GET CSS TYPE
+    // ==========================================
+
+    const getNotificationType = (type) => {
+
+        switch (type) {
+
+            case "DONOR_RECOMMENDATION":
+                return "recommendation";
+
+            case "DONOR_ACCEPTED":
+                return "response";
+
+            case "DONOR_DECLINED":
+                return "declined";
+
+            case "REQUEST_FULFILLED":
+                return "fulfilled";
+
+            default:
+                return "general";
+        }
+    };
+
+
+    // ==========================================
+    // FORMAT DATE/TIME
+    // ==========================================
+
+    const formatTime = (createdAt) => {
+
+        if (!createdAt) {
+            return "Recently";
+        }
+
+        const notificationDate = new Date(createdAt);
+
+        if (Number.isNaN(notificationDate.getTime())) {
+            return "Recently";
+        }
+
+        const now = new Date();
+
+        const difference =
+            Math.floor(
+                (now.getTime() - notificationDate.getTime()) / 1000
+            );
+
+        if (difference < 60) {
+            return "Just now";
+        }
+
+        if (difference < 3600) {
+
+            const minutes =
+                Math.floor(difference / 60);
+
+            return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+        }
+
+        if (difference < 86400) {
+
+            const hours =
+                Math.floor(difference / 3600);
+
+            return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+        }
+
+        if (difference < 604800) {
+
+            const days =
+                Math.floor(difference / 86400);
+
+            return `${days} day${days !== 1 ? "s" : ""} ago`;
+        }
+
+        return notificationDate.toLocaleDateString();
+    };
 
 
     // ==========================================
@@ -40,167 +147,95 @@ function Notifications() {
                         "Please login to view notifications."
                     );
 
+                    setLoading(false);
+
                     return;
                 }
 
 
-                const user = JSON.parse(storedUser);
+                const user =
+                    JSON.parse(storedUser);
 
 
-                // ==========================================
-                // 2. GET DONOR PROFILE USING USER ID
-                // ==========================================
+                if (!user?.id) {
 
-                const donorResponse =
-                    await api.get(
-                        `/donors/user/${user.id}`
+                    setError(
+                        "Invalid user information. Please login again."
                     );
 
+                    setLoading(false);
 
-                const donor = donorResponse.data;
+                    return;
+                }
+
+
+                setUserId(user.id);
 
 
                 // ==========================================
-                // 3. GET DONOR RESPONSES
+                // 2. GET PERSISTENT NOTIFICATIONS
                 // ==========================================
 
                 const response =
                     await api.get(
-                        `/request-responses/donor/${donor.id}`
+                        `/notifications/user/${user.id}`
                     );
 
 
-                const donorResponses =
+                const backendNotifications =
                     response.data || [];
 
 
-                const generatedNotifications = [];
-
-
                 // ==========================================
-                // 4. CREATE NOTIFICATIONS
+                // 3. CONVERT BACKEND DATA TO UI FORMAT
                 // ==========================================
 
-                donorResponses.forEach((item) => {
+                const formattedNotifications =
+                    backendNotifications.map(
+                        (notification) => ({
 
-                    const request = item.bloodRequest;
+                            id: notification.id,
 
+                            requestId:
+                                notification.requestId,
 
-                    // Safety check
-                    if (!request) {
-                        return;
-                    }
+                            type:
+                                getNotificationType(
+                                    notification.type
+                                ),
 
+                            backendType:
+                                notification.type,
 
-                    // ==========================================
-                    // AI RECOMMENDATION
-                    // ==========================================
-
-                    if (item.response === "PENDING") {
-
-                        generatedNotifications.push({
-
-                            id: `recommendation-${item.id}`,
-
-                            requestId: request.id,
-
-                            type: "recommendation",
-
-                            icon: "🩸",
+                            icon:
+                                getNotificationIcon(
+                                    notification.type
+                                ),
 
                             title:
-                                "Blood Request Recommended",
+                                notification.title,
 
                             message:
-                                `${request.bloodGroup} blood is required for ${request.patientName} at ${request.hospitalName}.`,
-
-                            time: "New",
-
-                            unread: true
-
-                        });
-
-                    }
-
-
-                    // ==========================================
-                    // DONOR ACCEPTED
-                    // ==========================================
-
-                    if (item.response === "ACCEPTED") {
-
-                        generatedNotifications.push({
-
-                            id: `accepted-${item.id}`,
-
-                            // IMPORTANT
-                            requestId: request.id,
-
-                            type: "response",
-
-                            icon: "❤️",
-
-                            title:
-                                "You Accepted a Blood Request",
-
-                            message:
-                                `You accepted the request for ${request.patientName} at ${request.hospitalName}.`,
+                                notification.message,
 
                             time:
-                                "Recent",
+                                formatTime(
+                                    notification.createdAt
+                                ),
 
                             unread:
-                                false
+                                !notification.read,
 
-                        });
+                            createdAt:
+                                notification.createdAt
 
-                    }
+                        })
+                    );
 
-
-                    // ==========================================
-                    // DONOR DECLINED
-                    // ==========================================
-
-                    if (item.response === "DECLINED") {
-
-                        generatedNotifications.push({
-
-                            id: `declined-${item.id}`,
-
-                            // IMPORTANT
-                            requestId: request.id,
-
-                            type: "declined",
-
-                            icon: "❌",
-
-                            title:
-                                "Blood Request Declined",
-
-                            message:
-                                `You declined the blood request for ${request.patientName}.`,
-
-                            time:
-                                "Recent",
-
-                            unread:
-                                false
-
-                        });
-
-                    }
-
-                });
-
-
-                // ==========================================
-                // 5. SAVE NOTIFICATIONS
-                // ==========================================
 
                 setNotifications(
-                    generatedNotifications
+                    formattedNotifications
                 );
-
 
             } catch (error) {
 
@@ -215,7 +250,7 @@ function Notifications() {
                 ) {
 
                     setError(
-                        "Donor profile not found. Please complete your donor profile first."
+                        "Notification service was not found. Please make sure the backend is running."
                     );
 
                 } else {
@@ -223,15 +258,12 @@ function Notifications() {
                     setError(
                         "Unable to load notifications."
                     );
-
                 }
 
             } finally {
 
                 setLoading(false);
-
             }
-
         };
 
 
@@ -241,25 +273,76 @@ function Notifications() {
 
 
     // ==========================================
+    // MARK ONE NOTIFICATION AS READ
+    // ==========================================
+
+    const markAsRead = async (notificationId) => {
+
+        try {
+
+            await api.put(
+                `/notifications/${notificationId}/read`
+            );
+
+
+            setNotifications(
+                (currentNotifications) =>
+                    currentNotifications.map(
+                        (notification) =>
+                            notification.id === notificationId
+                                ? {
+                                    ...notification,
+                                    unread: false
+                                }
+                                : notification
+                    )
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Failed to mark notification as read:",
+                error
+            );
+        }
+    };
+
+
+    // ==========================================
     // MARK ALL AS READ
     // ==========================================
 
-    const markAllRead = () => {
+    const markAllRead = async () => {
 
-        setNotifications(
+        if (!userId) {
+            return;
+        }
 
-            notifications.map(
-                (notification) => ({
 
-                    ...notification,
+        try {
 
-                    unread: false
+            await api.put(
+                `/notifications/user/${userId}/read-all`
+            );
 
-                })
-            )
 
-        );
+            setNotifications(
+                (currentNotifications) =>
+                    currentNotifications.map(
+                        (notification) => ({
+                            ...notification,
+                            unread: false
+                        })
+                    )
+            );
 
+        } catch (error) {
+
+            console.error(
+                "Failed to mark all notifications as read:",
+                error
+            );
+        }
     };
 
 
@@ -267,10 +350,40 @@ function Notifications() {
     // CLEAR ALL
     // ==========================================
 
-    const clearNotifications = () => {
+    const clearNotifications = async () => {
 
-        setNotifications([]);
+        if (!userId) {
+            return;
+        }
 
+
+        const confirmed =
+            window.confirm(
+                "Are you sure you want to clear all notifications?"
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        try {
+
+            await api.delete(
+                `/notifications/user/${userId}`
+            );
+
+
+            setNotifications([]);
+
+        } catch (error) {
+
+            console.error(
+                "Failed to clear notifications:",
+                error
+            );
+        }
     };
 
 
@@ -278,17 +391,32 @@ function Notifications() {
     // REMOVE ONE NOTIFICATION
     // ==========================================
 
-    const removeNotification = (notificationId) => {
+    const removeNotification = async (
+        notificationId
+    ) => {
 
-        setNotifications(
+        try {
 
-            notifications.filter(
-                (item) =>
-                    item.id !== notificationId
-            )
+            await api.delete(
+                `/notifications/${notificationId}`
+            );
 
-        );
 
+            setNotifications(
+                (currentNotifications) =>
+                    currentNotifications.filter(
+                        (notification) =>
+                            notification.id !== notificationId
+                    )
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Failed to delete notification:",
+                error
+            );
+        }
     };
 
 
@@ -296,35 +424,49 @@ function Notifications() {
     // OPEN REQUEST DETAILS
     // ==========================================
 
-    const openRequest = (notification) => {
+    const openRequest = async (notification) => {
+
+        // ------------------------------------------
+        // MARK AS READ
+        // ------------------------------------------
+
+        if (notification.unread) {
+
+            await markAsRead(
+                notification.id
+            );
+        }
+
+
+        // ------------------------------------------
+        // OPEN REQUEST
+        // ------------------------------------------
 
         if (!notification.requestId) {
             return;
         }
 
 
-        // Mark clicked notification as read
-        setNotifications((currentNotifications) =>
-            currentNotifications.map((item) =>
-
-                item.id === notification.id
-
-                    ? {
-                        ...item,
-                        unread: false
-                    }
-
-                    : item
-            )
-        );
-
-
         navigate(
             `/requests/${notification.requestId}`
         );
-
     };
 
+
+    // ==========================================
+    // UNREAD COUNT
+    // ==========================================
+
+    const unreadCount =
+        notifications.filter(
+            (notification) =>
+                notification.unread
+        ).length;
+
+
+    // ==========================================
+    // UI
+    // ==========================================
 
     return (
 
@@ -383,14 +525,7 @@ function Notifications() {
                             <div>
 
                                 <strong>
-
-                                    {
-                                        notifications.filter(
-                                            (notification) =>
-                                                notification.unread
-                                        ).length
-                                    }
-
+                                    {unreadCount}
                                 </strong>
 
                                 <span>
@@ -404,6 +539,7 @@ function Notifications() {
 
                                 <button
                                     onClick={markAllRead}
+                                    disabled={unreadCount === 0}
                                 >
                                     ✓ Mark all as read
                                 </button>
@@ -411,6 +547,9 @@ function Notifications() {
 
                                 <button
                                     onClick={clearNotifications}
+                                    disabled={
+                                        notifications.length === 0
+                                    }
                                 >
                                     Clear all
                                 </button>
@@ -506,7 +645,6 @@ function Notifications() {
 
                         <div className="notifications-list">
 
-
                             {notifications.map(
                                 (notification) => (
 
@@ -526,30 +664,32 @@ function Notifications() {
                                         }
 
                                         style={{
-                                            cursor: notification.requestId
-                                                ? "pointer"
-                                                : "default"
+                                            cursor:
+                                                notification.requestId
+                                                    ? "pointer"
+                                                    : "default"
                                         }}
                                     >
 
 
-                                        {/* ICON */}
+                                        {/* ==========================================
+                                            ICON
+                                        ========================================== */}
 
                                         <div
                                             className={
                                                 `notification-icon ${notification.type}`
                                             }
                                         >
-
                                             {notification.icon}
-
                                         </div>
 
 
-                                        {/* CONTENT */}
+                                        {/* ==========================================
+                                            CONTENT
+                                        ========================================== */}
 
                                         <div className="notification-content">
-
 
                                             <div className="notification-title-row">
 
@@ -579,19 +719,18 @@ function Notifications() {
                                                 {notification.time}
                                             </small>
 
-
                                         </div>
 
 
-                                        {/* REMOVE BUTTON */}
+                                        {/* ==========================================
+                                            REMOVE BUTTON
+                                        ========================================== */}
 
                                         <button
-
                                             className="notification-menu"
 
                                             onClick={(event) => {
 
-                                                // Prevent opening request
                                                 event.stopPropagation();
 
                                                 removeNotification(
@@ -599,7 +738,6 @@ function Notifications() {
                                                 );
 
                                             }}
-
                                         >
                                             ×
                                         </button>
@@ -608,9 +746,7 @@ function Notifications() {
                                     </div>
 
                                 )
-
                             )}
-
 
                         </div>
 
@@ -619,11 +755,8 @@ function Notifications() {
 
             </main>
 
-
         </div>
-
     );
-
 }
 
 

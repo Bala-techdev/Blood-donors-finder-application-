@@ -1,5 +1,6 @@
 package com.BloodDonorFinderApp.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class User {
     private String email;
 
     @Column(nullable = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Column(nullable = false)
@@ -38,7 +40,13 @@ public class User {
     public User() {
     }
 
-    public User(String name, String email, String password, String phone, String role) {
+    public User(
+            String name,
+            String email,
+            String password,
+            String phone,
+            String role
+    ) {
         this.name = name;
         this.email = email;
         this.password = password;

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
@@ -16,6 +15,19 @@ function FindDonors() {
     const [error, setError] = useState("");
 
     const [smartMatching, setSmartMatching] = useState(false);
+
+    // =========================
+    // GPS STATE
+    // =========================
+
+    const [latitude, setLatitude] = useState(null);
+    const [longitude, setLongitude] = useState(null);
+
+    const [locationDetected, setLocationDetected] = useState(false);
+
+    const [radius, setRadius] = useState("10");
+
+    const [gpsLoading, setGpsLoading] = useState(false);
 
 
     // =========================
@@ -66,136 +78,312 @@ function FindDonors() {
 
 
     // =========================
-    // SMART DONOR MATCHING
+    // GET USER GPS LOCATION
     // =========================
 
-  const findBestMatches = async () => {
+    const getMyLocation = () => {
 
-    try {
-
-        setLoading(true);
         setError("");
+        setGpsLoading(true);
 
-        // Blood group is required
-        if (!bloodGroup) {
+        if (!navigator.geolocation) {
 
             setError(
-                "Please select a blood group first."
+                "Geolocation is not supported by your browser."
             );
 
-            setLoading(false);
+            setGpsLoading(false);
 
             return;
         }
 
+        navigator.geolocation.getCurrentPosition(
 
-        /*
-         * Temporary Coimbatore coordinates.
-         *
-         * Later we will replace these with
-         * the actual user's GPS coordinates.
-         */
-        const requestData = {
+            (position) => {
 
-            bloodGroup: bloodGroup,
+                const userLatitude =
+                    position.coords.latitude;
 
-            location: location,
+                const userLongitude =
+                    position.coords.longitude;
 
-            latitude: 11.0168,
+                console.log(
+                    "User GPS:",
+                    userLatitude,
+                    userLongitude
+                );
 
-            longitude: 76.9558
+                setLatitude(userLatitude);
+                setLongitude(userLongitude);
+                setLocationDetected(true);
 
-        };
+                setGpsLoading(false);
 
+            },
 
-        console.log(
-            "Smart Match Request:",
-            requestData
+            (error) => {
+
+                console.error(
+                    "GPS error:",
+                    error
+                );
+
+                let message =
+                    "Unable to detect your location.";
+
+                if (error.code === 1) {
+                    message =
+                        "Location permission denied. Please allow location access in your browser.";
+                }
+
+                if (error.code === 2) {
+                    message =
+                        "Your location could not be determined.";
+                }
+
+                if (error.code === 3) {
+                    message =
+                        "Location request timed out. Please try again.";
+                }
+
+                setError(message);
+
+                setGpsLoading(false);
+
+            },
+
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
         );
+    };
 
 
-        // Call Smart Matching API
-        const response = await api.post(
-            "/donors/match",
-            requestData
-        );
+    // =========================
+    // FIND NEARBY DONORS
+    // =========================
+
+    const findNearbyDonors = async () => {
+
+        setError("");
+
+        if (
+            latitude === null ||
+            longitude === null
+        ) {
+
+            setError(
+                "Please click 'Use My Location' first."
+            );
+
+            return;
+        }
+
+        try {
+
+            setLoading(true);
+            setSmartMatching(false);
+
+            const response = await api.get(
+                "/donors/nearby",
+                {
+                    params: {
+                        latitude: latitude,
+                        longitude: longitude,
+                        radius: Number(radius)
+                    }
+                }
+            );
+
+            let nearbyDonors = response.data;
+
+            // Optional blood-group filtering
+            if (bloodGroup) {
+
+                nearbyDonors =
+                    nearbyDonors.filter(
+                        (donor) =>
+                            donor.bloodGroup ===
+                            bloodGroup
+                    );
+            }
+
+            setDonors(nearbyDonors);
+
+        } catch (err) {
+
+            console.error(
+                "Nearby donor search error:",
+                err
+            );
+
+            setError(
+                "Unable to find nearby donors. Please try again."
+            );
+
+        } finally {
+
+            setLoading(false);
+
+        }
+    };
 
 
-        console.log(
-            "Smart Match Raw Response:",
-            response.data
-        );
+    // =========================
+    // SMART DONOR MATCHING
+    // =========================
+
+    const findBestMatches = async () => {
+
+        try {
+
+            setLoading(true);
+            setError("");
+
+            // Blood group is required
+            if (!bloodGroup) {
+
+                setError(
+                    "Please select a blood group first."
+                );
+
+                setLoading(false);
+
+                return;
+            }
 
 
-        /*
-         * Backend response:
-         *
-         * {
-         *     donor: {...},
-         *     score: 100,
-         *     distance: 0
-         * }
-         *
-         * Convert it into the structure
-         * expected by DonorCard.
-         */
-const recommendedDonors =
-    response.data.map((item) => {
+            // =========================
+            // GPS REQUIRED
+            // =========================
 
-        return {
+            if (
+                latitude === null ||
+                longitude === null
+            ) {
 
-            // Existing donor information
-            ...item.donor,
+                setError(
+                    "Please click 'Use My Location' before finding the best matches."
+                );
 
-            // Donor name
-            name:
-                item.donor.user?.name ||
-                "Blood Donor",
+                setLoading(false);
 
-            // Final SmartBlood score
-            matchScore:
-                item.score,
-
-            // Distance
-            distance:
-                item.distance,
-
-            // ML prediction
-            responseProbability:
-                item.responseProbability
-
-        };
-
-    });
-
-        console.log(
-            "Processed Recommended Donors:",
-            recommendedDonors
-        );
+                return;
+            }
 
 
-        setDonors(recommendedDonors);
+            // =========================
+            // REAL USER GPS
+            // =========================
 
-        setSmartMatching(true);
+            const requestData = {
+
+                bloodGroup: bloodGroup,
+
+                location: location,
+
+                latitude: latitude,
+
+                longitude: longitude
+
+            };
 
 
-    } catch (err) {
+            console.log(
+                "Smart Match Request:",
+                requestData
+            );
 
-        console.error(
-            "Smart matching error:",
-            err
-        );
 
-        setError(
-            "Unable to find recommended donors. Please try again."
-        );
+            // Call Smart Matching API
+            const response = await api.post(
+                "/donors/match",
+                requestData
+            );
 
-    } finally {
 
-        setLoading(false);
+            console.log(
+                "Smart Match Raw Response:",
+                response.data
+            );
 
-    }
-};
+
+            /*
+             * Backend response:
+             *
+             * {
+             *     donor: {...},
+             *     score: 100,
+             *     distance: 0,
+             *     responseProbability: 87
+             * }
+             *
+             * Convert it into the structure
+             * expected by DonorCard.
+             */
+
+            const recommendedDonors =
+                response.data.map((item) => {
+
+                    return {
+
+                        // Existing donor information
+                        ...item.donor,
+
+                        // Donor name
+                        name:
+                            item.donor.user?.name ||
+                            "Blood Donor",
+
+                        // Final SmartBlood score
+                        matchScore:
+                            item.score,
+
+                        // Distance
+                        distance:
+                            item.distance,
+
+                        // ML prediction
+                        responseProbability:
+                            item.responseProbability
+
+                    };
+
+                });
+
+
+            console.log(
+                "Processed Recommended Donors:",
+                recommendedDonors
+            );
+
+
+            setDonors(recommendedDonors);
+
+            setSmartMatching(true);
+
+
+        } catch (err) {
+
+            console.error(
+                "Smart matching error:",
+                err
+            );
+
+            setError(
+                "Unable to find recommended donors. Please try again."
+            );
+
+        } finally {
+
+            setLoading(false);
+
+        }
+    };
+
+
     // =========================
     // INITIAL LOAD
     // =========================
@@ -228,9 +416,16 @@ const recommendedDonors =
 
         setBloodGroup("");
         setLocation("");
+
         setSmartMatching(false);
 
-        // Load all donors again
+        setLatitude(null);
+        setLongitude(null);
+
+        setLocationDetected(false);
+
+        setRadius("10");
+
         setTimeout(() => {
 
             fetchDonors();
@@ -382,6 +577,147 @@ const recommendedDonors =
                     </button>
 
                 </form>
+
+
+                {/* =========================
+                    GPS NEARBY DONOR SEARCH
+                ========================= */}
+
+                <div
+                    className="smart-match-box"
+                    style={{
+                        marginTop: "20px"
+                    }}
+                >
+
+                    <div className="smart-match-info">
+
+                        <span className="smart-match-icon">
+                            📍
+                        </span>
+
+                        <div>
+
+                            <h3>
+                                Nearby Donor Search
+                            </h3>
+
+                            <p>
+                                Find available donors
+                                based on your current
+                                GPS location.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "10px",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            marginTop: "15px"
+                        }}
+                    >
+
+                        <button
+                            type="button"
+                            className="smart-match-button"
+                            onClick={getMyLocation}
+                            disabled={gpsLoading}
+                        >
+
+                            {gpsLoading
+                                ? "Detecting Location..."
+                                : "📍 Use My Location"
+                            }
+
+                        </button>
+
+
+                        <select
+                            value={radius}
+                            onChange={(e) =>
+                                setRadius(
+                                    e.target.value
+                                )
+                            }
+                            disabled={!locationDetected}
+                            style={{
+                                padding: "10px 14px",
+                                borderRadius: "8px",
+                                border: "1px solid #ddd"
+                            }}
+                        >
+
+                            <option value="5">
+                                Within 5 km
+                            </option>
+
+                            <option value="10">
+                                Within 10 km
+                            </option>
+
+                            <option value="25">
+                                Within 25 km
+                            </option>
+
+                            <option value="50">
+                                Within 50 km
+                            </option>
+
+                        </select>
+
+
+                        <button
+                            type="button"
+                            className="smart-match-button"
+                            onClick={findNearbyDonors}
+                            disabled={
+                                loading ||
+                                !locationDetected
+                            }
+                        >
+
+                            {loading
+                                ? "Finding..."
+                                : "🔎 Find Nearby Donors"
+                            }
+
+                        </button>
+
+                    </div>
+
+
+                    {locationDetected && (
+
+                        <p
+                            style={{
+                                marginTop: "12px",
+                                color: "#15803d",
+                                fontWeight: "600"
+                            }}
+                        >
+                            ✓ Location detected
+                            <br />
+
+                            <small
+                                style={{
+                                    color: "#666"
+                                }}
+                            >
+                                {latitude.toFixed(4)},
+                                {" "}
+                                {longitude.toFixed(4)}
+                            </small>
+                        </p>
+
+                    )}
+
+                </div>
 
 
                 {/* =========================
@@ -546,10 +882,11 @@ const recommendedDonors =
 
                                 {/* Donor Card */}
 
-                                    <DonorCard
-                                        donor={donor}
-                                        smartMatch={smartMatching}
-                                    />
+                                <DonorCard
+                                    donor={donor}
+                                    smartMatch={smartMatching}
+                                />
+
 
                                 {/* Smart Match Details */}
 
@@ -558,29 +895,36 @@ const recommendedDonors =
                                     <div className="smart-donor-details">
 
                                         <span>
+
                                             📏{" "}
+
                                             {donor.distance != null
                                                 ? Number(
                                                     donor.distance
                                                 ).toFixed(2)
                                                 : "—"
                                             } km
+
                                         </span>
 
 
                                         <span>
+
                                             {donor.available
                                                 ? "🟢 Available"
                                                 : "🔴 Unavailable"
                                             }
+
                                         </span>
 
 
                                         <span>
+
                                             {donor.verified
                                                 ? "✓ Verified"
                                                 : "Not Verified"
                                             }
+
                                         </span>
 
                                     </div>
