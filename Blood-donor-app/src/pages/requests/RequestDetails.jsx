@@ -157,7 +157,7 @@ function RequestDetails() {
 
                     const donorResponse =
                         await api.get(
-                            `/donors/user/${user.id}`
+                            `/donors/me`
                         );
 
                     if (donorResponse.data) {
@@ -543,10 +543,8 @@ function RequestDetails() {
             // API
 
             await api.post(
-
-                `/request-responses/request/${bloodRequest.id}/user/${loggedInUser.id}`
-
-            );
+                    `/request-responses/request/${bloodRequest.id}/respond`
+                );
 
             // ======================================
             // REFRESH DONATION PROGRESS

@@ -109,8 +109,8 @@ function BloodRequests() {
 
         // Call donor response API
         const response = await api.post(
-            `/request-responses/request/${requestId}/user/${user.id}`
-        );
+                `/request-responses/request/${requestId}/respond`
+            );
 
 
         console.log(
