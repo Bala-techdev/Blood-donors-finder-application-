@@ -18,50 +18,43 @@ public class NotificationController {
     public NotificationController(
             NotificationService notificationService
     ) {
-        this.notificationService =
-                notificationService;
+        this.notificationService = notificationService;
     }
 
-
     // ==========================================
-    // GET USER NOTIFICATIONS
+    // GET MY NOTIFICATIONS
     // ==========================================
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Notification>>
-    getUserNotifications(
-            @PathVariable Long userId
+    @GetMapping("/me")
+    public ResponseEntity<List<Notification>> getMyNotifications(
+            org.springframework.security.core.Authentication authentication
     ) {
 
+        String email = authentication.getName();
+
         return ResponseEntity.ok(
-                notificationService
-                        .getUserNotifications(userId)
+                notificationService.getUserNotificationsByEmail(email)
         );
     }
 
-
     // ==========================================
-    // GET UNREAD COUNT
+    // GET MY UNREAD COUNT
     // ==========================================
 
-    @GetMapping("/user/{userId}/unread-count")
-    public ResponseEntity<Map<String, Long>>
-    getUnreadCount(
-            @PathVariable Long userId
+    @GetMapping("/me/unread-count")
+    public ResponseEntity<Map<String, Long>> getMyUnreadCount(
+            org.springframework.security.core.Authentication authentication
     ) {
+
+        String email = authentication.getName();
 
         long count =
-                notificationService
-                        .getUnreadCount(userId);
+                notificationService.getUnreadCountByEmail(email);
 
         return ResponseEntity.ok(
-                Map.of(
-                        "unreadCount",
-                        count
-                )
+                Map.of("unreadCount", count)
         );
     }
-
 
     // ==========================================
     // MARK ONE AS READ
@@ -69,16 +62,19 @@ public class NotificationController {
 
     @PutMapping("/{notificationId}/read")
     public ResponseEntity<?> markAsRead(
-            @PathVariable Long notificationId
+            @PathVariable Long notificationId,
+            org.springframework.security.core.Authentication authentication
     ) {
 
         try {
 
+            String email = authentication.getName();
+
             return ResponseEntity.ok(
-                    notificationService
-                            .markAsRead(
-                                    notificationId
-                            )
+                    notificationService.markAsRead(
+                            notificationId,
+                            email
+                    )
             );
 
         } catch (RuntimeException e) {
@@ -94,18 +90,18 @@ public class NotificationController {
         }
     }
 
-
     // ==========================================
     // MARK ALL AS READ
     // ==========================================
 
-    @PutMapping("/user/{userId}/read-all")
+    @PutMapping("/me/read-all")
     public ResponseEntity<?> markAllAsRead(
-            @PathVariable Long userId
+            org.springframework.security.core.Authentication authentication
     ) {
 
-        notificationService
-                .markAllAsRead(userId);
+        String email = authentication.getName();
+
+        notificationService.markAllAsReadByEmail(email);
 
         return ResponseEntity.ok(
                 Map.of(
@@ -115,22 +111,24 @@ public class NotificationController {
         );
     }
 
-
     // ==========================================
     // DELETE ONE
     // ==========================================
 
     @DeleteMapping("/{notificationId}")
     public ResponseEntity<?> deleteNotification(
-            @PathVariable Long notificationId
+            @PathVariable Long notificationId,
+            org.springframework.security.core.Authentication authentication
     ) {
 
         try {
 
-            notificationService
-                    .deleteNotification(
-                            notificationId
-                    );
+            String email = authentication.getName();
+
+            notificationService.deleteNotification(
+                    notificationId,
+                    email
+            );
 
             return ResponseEntity.ok(
                     Map.of(
@@ -152,18 +150,18 @@ public class NotificationController {
         }
     }
 
-
     // ==========================================
-    // CLEAR ALL
+    // CLEAR MY NOTIFICATIONS
     // ==========================================
 
-    @DeleteMapping("/user/{userId}")
+    @DeleteMapping("/me")
     public ResponseEntity<?> clearNotifications(
-            @PathVariable Long userId
+            org.springframework.security.core.Authentication authentication
     ) {
-//
-        notificationService
-                .clearNotifications(userId);
+
+        String email = authentication.getName();
+
+        notificationService.clearNotificationsByEmail(email);
 
         return ResponseEntity.ok(
                 Map.of(

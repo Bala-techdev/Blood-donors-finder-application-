@@ -12,24 +12,27 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
-
     private final UserRepository userRepository;
 
     public NotificationService(
             NotificationRepository notificationRepository,
             UserRepository userRepository
     ) {
-        this.notificationRepository =
-                notificationRepository;
-
-        this.userRepository =
-                userRepository;
+        this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
     }
-
 
     // ==========================================
     // CREATE NOTIFICATION
     // ==========================================
+
+    /*
+     * This method is used internally by the application
+     * to create notifications for a specific user.
+     *
+     * We KEEP userId here because the application itself
+     * needs to decide which user should receive a notification.
+     */
 
     public Notification createNotification(
             Long userId,
@@ -63,43 +66,59 @@ public class NotificationService {
         );
     }
 
-
     // ==========================================
-    // GET USER NOTIFICATIONS
+    // GET MY NOTIFICATIONS
     // ==========================================
 
-    public List<Notification> getUserNotifications(
-            Long userId
+    public List<Notification> getUserNotificationsByEmail(
+            String email
     ) {
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
 
         return notificationRepository
                 .findByUserIdOrderByCreatedAtDesc(
-                        userId
+                        user.getId()
                 );
     }
 
-
     // ==========================================
-    // GET UNREAD COUNT
+    // GET MY UNREAD COUNT
     // ==========================================
 
-    public long getUnreadCount(
-            Long userId
+    public long getUnreadCountByEmail(
+            String email
     ) {
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
 
         return notificationRepository
                 .countByUserIdAndReadFalse(
-                        userId
+                        user.getId()
                 );
     }
-
 
     // ==========================================
     // MARK ONE AS READ
     // ==========================================
 
     public Notification markAsRead(
-            Long notificationId
+            Long notificationId,
+            String email
     ) {
 
         Notification notification =
@@ -111,6 +130,16 @@ public class NotificationService {
                                 )
                         );
 
+        // Verify ownership
+        if (!notification.getUser()
+                .getEmail()
+                .equals(email)) {
+
+            throw new RuntimeException(
+                    "You are not allowed to modify this notification"
+            );
+        }
+
         notification.setRead(true);
 
         return notificationRepository.save(
@@ -118,19 +147,27 @@ public class NotificationService {
         );
     }
 
-
     // ==========================================
     // MARK ALL AS READ
     // ==========================================
 
-    public void markAllAsRead(
-            Long userId
+    public void markAllAsReadByEmail(
+            String email
     ) {
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
 
         List<Notification> notifications =
                 notificationRepository
                         .findByUserIdOrderByCreatedAtDesc(
-                                userId
+                                user.getId()
                         );
 
         for (Notification notification :
@@ -144,39 +181,58 @@ public class NotificationService {
         );
     }
 
-
     // ==========================================
     // DELETE ONE
     // ==========================================
 
     public void deleteNotification(
-            Long notificationId
+            Long notificationId,
+            String email
     ) {
 
-        if (!notificationRepository
-                .existsById(notificationId)) {
+        Notification notification =
+                notificationRepository
+                        .findById(notificationId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Notification not found"
+                                )
+                        );
+
+        // Verify ownership
+        if (!notification.getUser()
+                .getEmail()
+                .equals(email)) {
 
             throw new RuntimeException(
-                    "Notification not found"
+                    "You are not allowed to delete this notification"
             );
         }
 
-        notificationRepository.deleteById(
-                notificationId
+        notificationRepository.delete(
+                notification
         );
     }
 
-
     // ==========================================
-    // CLEAR ALL
+    // CLEAR MY NOTIFICATIONS
     // ==========================================
 
-    public void clearNotifications(
-            Long userId
+    public void clearNotificationsByEmail(
+            String email
     ) {
 
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
+
         notificationRepository.deleteByUserId(
-                userId
+                user.getId()
         );
     }
 }

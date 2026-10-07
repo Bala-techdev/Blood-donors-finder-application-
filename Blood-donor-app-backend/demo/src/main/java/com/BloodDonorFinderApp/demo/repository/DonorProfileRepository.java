@@ -14,12 +14,10 @@ public interface DonorProfileRepository
             String bloodGroup
     );
 
-
     List<DonorProfile>
     findByLocationContainingIgnoreCaseAndAvailableTrue(
             String location
     );
-
 
     List<DonorProfile>
     findByBloodGroupAndLocationContainingIgnoreCaseAndAvailableTrue(
@@ -27,8 +25,7 @@ public interface DonorProfileRepository
             String location
     );
 
-
-    // Find donor profile using logged-in user's ID
+    // Find donor profile using the authenticated user's ID
     Optional<DonorProfile>
     findByUserId(Long userId);
 }

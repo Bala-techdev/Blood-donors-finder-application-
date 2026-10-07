@@ -1,9 +1,11 @@
-package security;
+package com.BloodDonorFinderApp.demo.security;
 
 import com.BloodDonorFinderApp.demo.entity.User;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -24,13 +26,14 @@ public class JwtService {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("blood-donor-finder")
                 .issuedAt(now)
-                .expiresAt(now.plusSeconds(60 * 60 * 24))
+                .expiresAt(now.plusSeconds(24 * 60 * 60))
                 .subject(user.getEmail())
                 .claim("userId", user.getId())
                 .claim("role", user.getRole())
                 .build();
 
-        JwsHeader header = JwsHeader.with(MacAlgorithm.HS256)
+        JwsHeader header = JwsHeader
+                .with(MacAlgorithm.HS256)
                 .build();
 
         return jwtEncoder.encode(

@@ -3,6 +3,8 @@ package com.BloodDonorFinderApp.demo.controller;
 import com.BloodDonorFinderApp.demo.dto.LoginRequest;
 import com.BloodDonorFinderApp.demo.dto.LoginResponse;
 import com.BloodDonorFinderApp.demo.service.AuthService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +23,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(
-            @RequestBody LoginRequest request
+            @RequestBody @Valid LoginRequest request
     ) {
 
         try {
@@ -34,11 +36,11 @@ public class AuthController {
         } catch (RuntimeException e) {
 
             return ResponseEntity
-                    .badRequest()
+                    .status(HttpStatus.UNAUTHORIZED)
                     .body(
                             Map.of(
                                     "message",
-                                    e.getMessage()
+                                    "Invalid email or password"
                             )
                     );
         }

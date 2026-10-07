@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
@@ -38,18 +37,29 @@ function Login() {
 
             setLoading(true);
 
-            const response = await api.get(
-                `/users/email/${encodeURIComponent(formData.email)}`
+            // JWT login
+            const response = await api.post(
+                "/auth/login",
+                formData
             );
 
-            const user = response.data;
+            const loginData = response.data;
 
-            if (user.password !== formData.password) {
-                setError("Incorrect password.");
-                return;
-            }
+            // Store JWT token
+            localStorage.setItem(
+                "bloodDonorToken",
+                loginData.token
+            );
 
-            // Store logged-in user for the prototype
+            // Store logged-in user information
+            const user = {
+                id: loginData.userId,
+                name: loginData.name,
+                email: loginData.email,
+                phone: loginData.phone,
+                role: loginData.role
+            };
+
             localStorage.setItem(
                 "bloodDonorUser",
                 JSON.stringify(user)
@@ -60,8 +70,10 @@ function Login() {
 
         } catch (err) {
 
-            if (err.response?.status === 404) {
-                setError("No account found with this email.");
+            if (err.response?.status === 401) {
+                setError("Invalid email or password.");
+            } else if (err.response?.data?.message) {
+                setError(err.response.data.message);
             } else {
                 setError("Unable to login. Please try again.");
             }
@@ -167,6 +179,7 @@ function Login() {
                                     placeholder="Enter your email"
                                     value={formData.email}
                                     onChange={handleChange}
+                                    disabled={loading}
                                 />
 
                             </div>
@@ -192,6 +205,7 @@ function Login() {
                                     placeholder="Enter your password"
                                     value={formData.password}
                                     onChange={handleChange}
+                                    disabled={loading}
                                 />
 
                             </div>

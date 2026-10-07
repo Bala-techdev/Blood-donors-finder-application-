@@ -1,7 +1,9 @@
 package com.BloodDonorFinderApp.demo.service;
 
 import com.BloodDonorFinderApp.demo.entity.DonorProfile;
+import com.BloodDonorFinderApp.demo.entity.User;
 import com.BloodDonorFinderApp.demo.repository.DonorProfileRepository;
+import com.BloodDonorFinderApp.demo.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -12,49 +14,127 @@ import java.util.Optional;
 public class DonorService {
 
     private final DonorProfileRepository donorProfileRepository;
+    private final UserRepository userRepository;
 
-    public DonorService(DonorProfileRepository donorProfileRepository) {
+    public DonorService(
+            DonorProfileRepository donorProfileRepository,
+            UserRepository userRepository
+    ) {
         this.donorProfileRepository = donorProfileRepository;
+        this.userRepository = userRepository;
     }
 
-    public DonorProfile createDonor(DonorProfile donorProfile) {
-        return donorProfileRepository.save(donorProfile);
+    // ==========================================
+    // CREATE DONOR
+    // ==========================================
+
+    public DonorProfile createDonor(
+            DonorProfile donorProfile,
+            String email
+    ) {
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
+
+        // Always associate the donor profile
+        // with the authenticated user.
+        donorProfile.setUser(user);
+
+        return donorProfileRepository.save(
+                donorProfile
+        );
     }
+
+    // ==========================================
+    // GET ALL DONORS
+    // ==========================================
 
     public List<DonorProfile> getAllDonors() {
+
         return donorProfileRepository.findAll();
     }
 
-    public Optional<DonorProfile> getDonorById(Long id) {
+    // ==========================================
+    // GET DONOR BY ID
+    // ==========================================
+
+    public Optional<DonorProfile> getDonorById(
+            Long id
+    ) {
+
         return donorProfileRepository.findById(id);
     }
 
-    public List<DonorProfile> searchByBloodGroup(String bloodGroup) {
-        return donorProfileRepository
-                .findByBloodGroupAndAvailableTrue(bloodGroup);
+    // ==========================================
+    // GET MY DONOR PROFILE
+    // ==========================================
+
+    public Optional<DonorProfile> getDonorByUserEmail(
+            String email
+    ) {
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
+
+        return donorProfileRepository.findByUserId(
+                user.getId()
+        );
     }
 
-    public List<DonorProfile> searchByLocation(String location) {
+    // ==========================================
+    // SEARCH BY BLOOD GROUP
+    // ==========================================
+
+    public List<DonorProfile> searchByBloodGroup(
+            String bloodGroup
+    ) {
+
         return donorProfileRepository
-                .findByLocationContainingIgnoreCaseAndAvailableTrue(location);
+                .findByBloodGroupAndAvailableTrue(
+                        bloodGroup
+                );
     }
+
+    // ==========================================
+    // SEARCH BY LOCATION
+    // ==========================================
+
+    public List<DonorProfile> searchByLocation(
+            String location
+    ) {
+
+        return donorProfileRepository
+                .findByLocationContainingIgnoreCaseAndAvailableTrue(
+                        location
+                );
+    }
+
+    // ==========================================
+    // SEARCH BY BLOOD GROUP + LOCATION
+    // ==========================================
 
     public List<DonorProfile> searchDonors(
             String bloodGroup,
             String location
     ) {
+
         return donorProfileRepository
                 .findByBloodGroupAndLocationContainingIgnoreCaseAndAvailableTrue(
                         bloodGroup,
                         location
                 );
-    }
-
-    public Optional<DonorProfile> getDonorByUserId(
-            Long userId
-    ) {
-        return donorProfileRepository
-                .findByUserId(userId);
     }
 
     // ==========================================
@@ -115,19 +195,31 @@ public class DonorService {
         final double EARTH_RADIUS_KM = 6371.0;
 
         double latDistance =
-                Math.toRadians(latitude2 - latitude1);
+                Math.toRadians(
+                        latitude2 - latitude1
+                );
 
         double lonDistance =
-                Math.toRadians(longitude2 - longitude1);
+                Math.toRadians(
+                        longitude2 - longitude1
+                );
 
         double a =
                 Math.sin(latDistance / 2)
                         * Math.sin(latDistance / 2)
                         +
-                        Math.cos(Math.toRadians(latitude1))
-                                * Math.cos(Math.toRadians(latitude2))
-                                * Math.sin(lonDistance / 2)
-                                * Math.sin(lonDistance / 2);
+                        Math.cos(
+                                Math.toRadians(latitude1)
+                        )
+                                * Math.cos(
+                                Math.toRadians(latitude2)
+                        )
+                                * Math.sin(
+                                lonDistance / 2
+                        )
+                                * Math.sin(
+                                lonDistance / 2
+                        );
 
         double c =
                 2 * Math.atan2(

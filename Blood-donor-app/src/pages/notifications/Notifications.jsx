@@ -10,7 +10,6 @@ function Notifications() {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [userId, setUserId] = useState(null);
 
     // ==========================================
     // GET ICON BASED ON NOTIFICATION TYPE
@@ -132,16 +131,14 @@ function Notifications() {
                 setLoading(true);
                 setError("");
 
-
-                // ==========================================
-                // 1. GET LOGGED-IN USER
-                // ==========================================
+                // Check login session
+                const storedToken =
+                    localStorage.getItem("bloodDonorToken");
 
                 const storedUser =
                     localStorage.getItem("bloodDonorUser");
 
-
-                if (!storedUser) {
+                if (!storedToken || !storedUser) {
 
                     setError(
                         "Please login to view notifications."
@@ -152,12 +149,15 @@ function Notifications() {
                     return;
                 }
 
-
-                const user =
+                // Validate stored user information
+                try {
                     JSON.parse(storedUser);
+                } catch (e) {
 
-
-                if (!user?.id) {
+                    console.error(
+                        "Invalid stored user information:",
+                        e
+                    );
 
                     setError(
                         "Invalid user information. Please login again."
@@ -168,26 +168,20 @@ function Notifications() {
                     return;
                 }
 
-
-                setUserId(user.id);
-
-
                 // ==========================================
-                // 2. GET PERSISTENT NOTIFICATIONS
+                // GET CURRENT USER'S NOTIFICATIONS
                 // ==========================================
 
                 const response =
                     await api.get(
-                        `/notifications/user/${user.id}`
+                        "/notifications/me"
                     );
-
 
                 const backendNotifications =
                     response.data || [];
 
-
                 // ==========================================
-                // 3. CONVERT BACKEND DATA TO UI FORMAT
+                // CONVERT BACKEND DATA TO UI FORMAT
                 // ==========================================
 
                 const formattedNotifications =
@@ -228,10 +222,8 @@ function Notifications() {
 
                             createdAt:
                                 notification.createdAt
-
                         })
                     );
-
 
                 setNotifications(
                     formattedNotifications
@@ -244,8 +236,13 @@ function Notifications() {
                     error
                 );
 
+                if (error.response?.status === 401) {
 
-                if (
+                    setError(
+                        "Your session has expired. Please login again."
+                    );
+
+                } else if (
                     error.response?.status === 404
                 ) {
 
@@ -266,7 +263,6 @@ function Notifications() {
             }
         };
 
-
         loadNotifications();
 
     }, []);
@@ -283,7 +279,6 @@ function Notifications() {
             await api.put(
                 `/notifications/${notificationId}/read`
             );
-
 
             setNotifications(
                 (currentNotifications) =>
@@ -314,17 +309,11 @@ function Notifications() {
 
     const markAllRead = async () => {
 
-        if (!userId) {
-            return;
-        }
-
-
         try {
 
             await api.put(
-                `/notifications/user/${userId}/read-all`
+                "/notifications/me/read-all"
             );
-
 
             setNotifications(
                 (currentNotifications) =>
@@ -352,28 +341,20 @@ function Notifications() {
 
     const clearNotifications = async () => {
 
-        if (!userId) {
-            return;
-        }
-
-
         const confirmed =
             window.confirm(
                 "Are you sure you want to clear all notifications?"
             );
 
-
         if (!confirmed) {
             return;
         }
 
-
         try {
 
             await api.delete(
-                `/notifications/user/${userId}`
+                "/notifications/me"
             );
-
 
             setNotifications([]);
 
@@ -401,7 +382,6 @@ function Notifications() {
                 `/notifications/${notificationId}`
             );
 
-
             setNotifications(
                 (currentNotifications) =>
                     currentNotifications.filter(
@@ -426,10 +406,7 @@ function Notifications() {
 
     const openRequest = async (notification) => {
 
-        // ------------------------------------------
-        // MARK AS READ
-        // ------------------------------------------
-
+        // Mark notification as read
         if (notification.unread) {
 
             await markAsRead(
@@ -437,15 +414,10 @@ function Notifications() {
             );
         }
 
-
-        // ------------------------------------------
-        // OPEN REQUEST
-        // ------------------------------------------
-
+        // Open related request
         if (!notification.requestId) {
             return;
         }
-
 
         navigate(
             `/requests/${notification.requestId}`
@@ -469,9 +441,7 @@ function Notifications() {
     // ==========================================
 
     return (
-
         <div className="notifications-page">
-
 
             {/* ==========================================
                 HEADER
@@ -485,7 +455,6 @@ function Notifications() {
                 >
                     ← Dashboard
                 </Link>
-
 
                 <div className="notifications-title">
 
@@ -512,7 +481,6 @@ function Notifications() {
 
             <main className="notifications-main">
 
-
                 {/* ==========================================
                     TOOLBAR
                 ========================================== */}
@@ -534,7 +502,6 @@ function Notifications() {
 
                             </div>
 
-
                             <div className="notification-actions">
 
                                 <button
@@ -543,7 +510,6 @@ function Notifications() {
                                 >
                                     ✓ Mark all as read
                                 </button>
-
 
                                 <button
                                     onClick={clearNotifications}
@@ -557,7 +523,6 @@ function Notifications() {
                             </div>
 
                         </div>
-
                     )}
 
 
@@ -578,7 +543,6 @@ function Notifications() {
                         </p>
 
                     </div>
-
                 )}
 
 
@@ -604,7 +568,6 @@ function Notifications() {
                             </p>
 
                         </div>
-
                     )}
 
 
@@ -631,7 +594,6 @@ function Notifications() {
                             </p>
 
                         </div>
-
                     )}
 
 
@@ -650,19 +612,16 @@ function Notifications() {
 
                                     <div
                                         key={notification.id}
-
                                         className={`notification-card ${
                                             notification.unread
                                                 ? "unread"
                                                 : ""
                                         }`}
-
                                         onClick={() =>
                                             openRequest(
                                                 notification
                                             )
                                         }
-
                                         style={{
                                             cursor:
                                                 notification.requestId
@@ -671,10 +630,7 @@ function Notifications() {
                                         }}
                                     >
 
-
-                                        {/* ==========================================
-                                            ICON
-                                        ========================================== */}
+                                        {/* ICON */}
 
                                         <div
                                             className={
@@ -685,9 +641,7 @@ function Notifications() {
                                         </div>
 
 
-                                        {/* ==========================================
-                                            CONTENT
-                                        ========================================== */}
+                                        {/* CONTENT */}
 
                                         <div className="notification-content">
 
@@ -697,23 +651,19 @@ function Notifications() {
                                                     {notification.title}
                                                 </h3>
 
-
                                                 {notification.unread && (
 
                                                     <span
                                                         className="unread-dot"
                                                     >
                                                     </span>
-
                                                 )}
 
                                             </div>
 
-
                                             <p>
                                                 {notification.message}
                                             </p>
-
 
                                             <small>
                                                 {notification.time}
@@ -722,13 +672,10 @@ function Notifications() {
                                         </div>
 
 
-                                        {/* ==========================================
-                                            REMOVE BUTTON
-                                        ========================================== */}
+                                        {/* REMOVE BUTTON */}
 
                                         <button
                                             className="notification-menu"
-
                                             onClick={(event) => {
 
                                                 event.stopPropagation();
@@ -742,22 +689,17 @@ function Notifications() {
                                             ×
                                         </button>
 
-
                                     </div>
-
                                 )
                             )}
 
                         </div>
-
                     )}
-
 
             </main>
 
         </div>
     );
 }
-
 
 export default Notifications;

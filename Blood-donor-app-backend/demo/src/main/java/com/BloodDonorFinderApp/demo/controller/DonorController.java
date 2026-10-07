@@ -1,16 +1,17 @@
 package com.BloodDonorFinderApp.demo.controller;
 
+import com.BloodDonorFinderApp.demo.entity.BloodRequest;
 import com.BloodDonorFinderApp.demo.entity.DonorProfile;
+import com.BloodDonorFinderApp.demo.service.BloodRequestService;
+import com.BloodDonorFinderApp.demo.service.DonorMatchingService;
 import com.BloodDonorFinderApp.demo.service.DonorService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import com.BloodDonorFinderApp.demo.entity.BloodRequest;
-import com.BloodDonorFinderApp.demo.service.DonorMatchingService;
-import com.BloodDonorFinderApp.demo.service.BloodRequestService;
-
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/donors")
@@ -18,28 +19,18 @@ import java.util.List;
 public class DonorController {
 
     private final DonorService donorService;
-
     private final DonorMatchingService donorMatchingService;
-
     private final BloodRequestService bloodRequestService;
 
-
     public DonorController(
-
             DonorService donorService,
-
             DonorMatchingService donorMatchingService,
-
             BloodRequestService bloodRequestService
     ) {
-
         this.donorService = donorService;
-
         this.donorMatchingService = donorMatchingService;
-
         this.bloodRequestService = bloodRequestService;
     }
-
 
     // ==========================================
     // CREATE DONOR
@@ -47,12 +38,17 @@ public class DonorController {
 
     @PostMapping
     public ResponseEntity<DonorProfile> createDonor(
-
-            @RequestBody DonorProfile donorProfile
+            @RequestBody DonorProfile donorProfile,
+            Authentication authentication
     ) {
 
+        String email = authentication.getName();
+
         DonorProfile createdDonor =
-                donorService.createDonor(donorProfile);
+                donorService.createDonor(
+                        donorProfile,
+                        email
+                );
 
         return new ResponseEntity<>(
                 createdDonor,
@@ -60,6 +56,24 @@ public class DonorController {
         );
     }
 
+    // ==========================================
+    // GET MY DONOR PROFILE
+    // ==========================================
+
+    @GetMapping("/me")
+    public ResponseEntity<DonorProfile> getMyDonorProfile(
+            Authentication authentication
+    ) {
+
+        String email = authentication.getName();
+
+        return donorService
+                .getDonorByUserEmail(email)
+                .map(ResponseEntity::ok)
+                .orElse(
+                        ResponseEntity.notFound().build()
+                );
+    }
 
     // ==========================================
     // GET ALL DONORS
@@ -73,45 +87,22 @@ public class DonorController {
         );
     }
 
-
     // ==========================================
     // GET DONOR BY ID
     // ==========================================
 
     @GetMapping("/{id}")
     public ResponseEntity<DonorProfile> getDonorById(
-
             @PathVariable Long id
     ) {
 
-        return donorService.getDonorById(id)
+        return donorService
+                .getDonorById(id)
                 .map(ResponseEntity::ok)
                 .orElse(
                         ResponseEntity.notFound().build()
                 );
     }
-
-
-    // ==========================================
-    // GET DONOR PROFILE BY USER ID
-    // ==========================================
-
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getDonorByUserId(
-
-            @PathVariable Long userId
-    ) {
-
-        return donorService
-                .getDonorByUserId(userId)
-                .map(ResponseEntity::ok)
-                .orElse(
-                        ResponseEntity
-                                .notFound()
-                                .build()
-                );
-    }
-
 
     // ==========================================
     // SEARCH DONORS
@@ -119,7 +110,6 @@ public class DonorController {
 
     @GetMapping("/search")
     public ResponseEntity<List<DonorProfile>> searchDonors(
-
             @RequestParam(required = false)
             String bloodGroup,
 
@@ -130,7 +120,6 @@ public class DonorController {
         if (bloodGroup != null && location != null) {
 
             return ResponseEntity.ok(
-
                     donorService.searchDonors(
                             bloodGroup,
                             location
@@ -138,34 +127,28 @@ public class DonorController {
             );
         }
 
-
         if (bloodGroup != null) {
 
             return ResponseEntity.ok(
-
                     donorService.searchByBloodGroup(
                             bloodGroup
                     )
             );
         }
 
-
         if (location != null) {
 
             return ResponseEntity.ok(
-
                     donorService.searchByLocation(
                             location
                     )
             );
         }
 
-
         return ResponseEntity.ok(
                 donorService.getAllDonors()
         );
     }
-
 
     // ==========================================
     // SMART DONOR MATCHING
@@ -175,18 +158,15 @@ public class DonorController {
     public ResponseEntity<
             List<DonorMatchingService.DonorMatchResult>
             > findMatchingDonors(
-
             @RequestBody BloodRequest request
     ) {
 
         return ResponseEntity.ok(
-
                 donorMatchingService.findBestDonors(
                         request
                 )
         );
     }
-
 
     // ==========================================
     // SMART MATCHING USING REQUEST ID
@@ -194,7 +174,6 @@ public class DonorController {
 
     @GetMapping("/match/request/{requestId}")
     public ResponseEntity<?> findMatchingDonorsByRequestId(
-
             @PathVariable Long requestId
     ) {
 
@@ -209,12 +188,10 @@ public class DonorController {
                                     )
                             );
 
-
             List<DonorMatchingService.DonorMatchResult>
                     matches =
                     donorMatchingService
                             .findBestDonors(request);
-
 
             return ResponseEntity.ok(matches);
 
@@ -223,7 +200,7 @@ public class DonorController {
             return ResponseEntity
                     .badRequest()
                     .body(
-                            java.util.Map.of(
+                            Map.of(
                                     "message",
                                     e.getMessage()
                             )
@@ -231,16 +208,13 @@ public class DonorController {
         }
     }
 
-
     // ==========================================
-// FIND NEARBY DONORS
-// ==========================================
+    // FIND NEARBY DONORS
+    // ==========================================
 
     @GetMapping("/nearby")
     public ResponseEntity<List<DonorProfile>> findNearbyDonors(
-
             @RequestParam double latitude,
-
             @RequestParam double longitude,
 
             @RequestParam(defaultValue = "10")

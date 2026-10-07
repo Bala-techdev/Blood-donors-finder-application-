@@ -4,10 +4,9 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -28,11 +27,6 @@ public class SecurityConfig {
 
     @Value("${jwt.secret}")
     private String jwtSecret;
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
     public SecretKey jwtSecretKey() {
@@ -64,27 +58,32 @@ public class SecurityConfig {
     ) throws Exception {
 
         http
+                // JWT authentication is stateless
                 .csrf(csrf -> csrf.disable())
 
+                // Enable CORS for React frontend
                 .cors(cors -> cors.configurationSource(
                         corsConfigurationSource()
                 ))
 
+                // Do not create HTTP sessions
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
 
+                // Authorization rules
                 .authorizeHttpRequests(auth -> auth
 
-                        // Public authentication endpoints
+                        // Login/authentication endpoints are public
                         .requestMatchers(
                                 "/api/auth/**"
                         ).permitAll()
 
-                        // Registration must be public
+                        // Only user registration is public
                         .requestMatchers(
+                                HttpMethod.POST,
                                 "/api/users"
                         ).permitAll()
 
@@ -92,6 +91,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
+                // Validate JWT on protected requests
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwt -> {})
                 );

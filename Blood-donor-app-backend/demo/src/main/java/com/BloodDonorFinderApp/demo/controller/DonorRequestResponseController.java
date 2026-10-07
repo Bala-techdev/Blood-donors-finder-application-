@@ -1,13 +1,14 @@
 package com.BloodDonorFinderApp.demo.controller;
 
+import com.BloodDonorFinderApp.demo.dto.DonorReliabilityResult;
 import com.BloodDonorFinderApp.demo.entity.DonorRequestResponse;
+import com.BloodDonorFinderApp.demo.service.DonorReliabilityService;
 import com.BloodDonorFinderApp.demo.service.DonorRequestResponseService;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import com.BloodDonorFinderApp.demo.dto.DonorReliabilityResult;
-import com.BloodDonorFinderApp.demo.service.DonorReliabilityService;
+
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +20,6 @@ public class DonorRequestResponseController {
     private final DonorRequestResponseService responseService;
     private final DonorReliabilityService reliabilityService;
 
-
     // ==========================================
     // CONSTRUCTOR
     // ==========================================
@@ -28,37 +28,33 @@ public class DonorRequestResponseController {
             DonorRequestResponseService responseService,
             DonorReliabilityService reliabilityService
     ) {
-
         this.responseService = responseService;
-
-        this.reliabilityService =
-                reliabilityService;
+        this.reliabilityService = reliabilityService;
     }
-
 
     // ==========================================
     // DONOR → ACCEPT / I CAN HELP
     // ==========================================
 
-    @PostMapping("/request/{requestId}/user/{userId}")
+    @PostMapping("/request/{requestId}/respond")
     public ResponseEntity<?> respondToRequest(
-
             @PathVariable Long requestId,
-
-            @PathVariable Long userId
+            Authentication authentication
     ) {
 
         try {
 
+            String email = authentication.getName();
+
             DonorRequestResponse response =
                     responseService.respondToRequest(
                             requestId,
-                            userId
+                            email
                     );
 
-            return ResponseEntity.status(
-                    HttpStatus.CREATED
-            ).body(response);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(response);
 
         } catch (RuntimeException e) {
 
@@ -73,7 +69,6 @@ public class DonorRequestResponseController {
         }
     }
 
-
     // ==========================================
     // GET ALL RESPONSES FOR A BLOOD REQUEST
     // ==========================================
@@ -81,7 +76,6 @@ public class DonorRequestResponseController {
     @GetMapping("/request/{requestId}")
     public ResponseEntity<List<DonorRequestResponse>>
     getResponsesForRequest(
-
             @PathVariable Long requestId
     ) {
 
@@ -92,54 +86,50 @@ public class DonorRequestResponseController {
         return ResponseEntity.ok(responses);
     }
 
-
     // ==========================================
-    // GET ALL RESPONSES BY A DONOR
+    // GET MY RESPONSES
     // ==========================================
 
-    @GetMapping("/donor/{donorId}")
-    public ResponseEntity<List<DonorRequestResponse>>
-    getResponsesByDonor(
-
-            @PathVariable Long donorId
+    @GetMapping("/me")
+    public ResponseEntity<?> getMyResponses(
+            Authentication authentication
     ) {
 
-        List<DonorRequestResponse> responses =
-                responseService
-                        .getResponsesByDonor(donorId);
+        try {
 
-        return ResponseEntity.ok(responses);
+            String email = authentication.getName();
+
+            List<DonorRequestResponse> responses =
+                    responseService.getResponsesByUserEmail(
+                            email
+                    );
+
+            return ResponseEntity.ok(responses);
+
+        } catch (RuntimeException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    e.getMessage()
+                            )
+                    );
+        }
     }
-
 
     // ==========================================
     // AI → RECOMMEND DONOR
-    // ==========================================
-    //
-    // This endpoint stores AI matching results.
-    //
-    // Example:
-    //
-    // POST:
-    // /api/request-responses/recommend/request/16/donor/1
-    //
-    // Parameters:
-    //
-    // ?matchScore=95.5&distance=2.3
-    //
     // ==========================================
 
     @PostMapping(
             "/recommend/request/{requestId}/donor/{donorId}"
     )
     public ResponseEntity<?> recommendDonor(
-
             @PathVariable Long requestId,
-
             @PathVariable Long donorId,
-
             @RequestParam Double matchScore,
-
             @RequestParam Double distance
     ) {
 
@@ -153,9 +143,9 @@ public class DonorRequestResponseController {
                             distance
                     );
 
-            return ResponseEntity.status(
-                    HttpStatus.CREATED
-            ).body(response);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(response);
 
         } catch (RuntimeException e) {
 
@@ -171,23 +161,23 @@ public class DonorRequestResponseController {
     }
 
     // ==========================================
-// DONOR → DECLINE / CAN'T HELP
-// ==========================================
+    // DONOR → DECLINE / CAN'T HELP
+    // ==========================================
 
-    @PostMapping("/request/{requestId}/user/{userId}/decline")
+    @PostMapping("/request/{requestId}/decline")
     public ResponseEntity<?> declineRequest(
-
             @PathVariable Long requestId,
-
-            @PathVariable Long userId
+            Authentication authentication
     ) {
 
         try {
 
+            String email = authentication.getName();
+
             DonorRequestResponse response =
                     responseService.declineRequest(
                             requestId,
-                            userId
+                            email
                     );
 
             return ResponseEntity.ok(response);
@@ -206,8 +196,8 @@ public class DonorRequestResponseController {
     }
 
     // ==========================================
-// DONOR RELIABILITY SCORE
-// ==========================================
+    // DONOR RELIABILITY SCORE
+    // ==========================================
 
     @GetMapping("/donor/{donorId}/reliability")
     public ResponseEntity<?> getDonorReliability(

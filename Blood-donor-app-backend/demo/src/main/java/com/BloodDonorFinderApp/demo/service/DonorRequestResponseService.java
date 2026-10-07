@@ -6,6 +6,8 @@ import com.BloodDonorFinderApp.demo.entity.DonorRequestResponse;
 import com.BloodDonorFinderApp.demo.repository.BloodRequestRepository;
 import com.BloodDonorFinderApp.demo.repository.DonorProfileRepository;
 import com.BloodDonorFinderApp.demo.repository.DonorRequestResponseRepository;
+import com.BloodDonorFinderApp.demo.entity.User;
+import com.BloodDonorFinderApp.demo.repository.UserRepository;
 
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,7 @@ public class DonorRequestResponseService {
     private final BloodRequestRepository bloodRequestRepository;
     private final DonorProfileRepository donorProfileRepository;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     // ==========================================
     // CONSTRUCTOR
@@ -29,12 +32,14 @@ public class DonorRequestResponseService {
             DonorRequestResponseRepository responseRepository,
             BloodRequestRepository bloodRequestRepository,
             DonorProfileRepository donorProfileRepository,
-            NotificationService notificationService) {
-
+            NotificationService notificationService,
+            UserRepository userRepository
+    ) {
         this.responseRepository = responseRepository;
         this.bloodRequestRepository = bloodRequestRepository;
         this.donorProfileRepository = donorProfileRepository;
         this.notificationService = notificationService;
+        this.userRepository = userRepository;
     }
 
 
@@ -125,7 +130,8 @@ public class DonorRequestResponseService {
 
     public DonorRequestResponse respondToRequest(
             Long requestId,
-            Long userId) {
+            String email
+    ) {
 
         // ==========================================
         // 1. FIND BLOOD REQUEST
@@ -140,35 +146,47 @@ public class DonorRequestResponseService {
                                 )
                         );
 
-
         // ==========================================
         // 2. CHECK REQUEST STATUS
         // ==========================================
 
-        if (!"PENDING".equalsIgnoreCase(request.getStatus())) {
+        if (!"PENDING".equalsIgnoreCase(
+                request.getStatus()
+        )) {
 
             throw new RuntimeException(
                     "This blood request is no longer accepting responses"
             );
         }
 
+        // ==========================================
+        // 3. FIND AUTHENTICATED USER
+        // ==========================================
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
 
         // ==========================================
-        // 3. FIND DONOR PROFILE
+        // 4. FIND DONOR PROFILE
         // ==========================================
 
         DonorProfile donor =
                 donorProfileRepository
-                        .findByUserId(userId)
+                        .findByUserId(user.getId())
                         .orElseThrow(() ->
                                 new RuntimeException(
                                         "Donor profile not found for this user"
                                 )
                         );
 
-
         // ==========================================
-        // 4. CHECK DONOR AVAILABILITY
+        // 5. CHECK DONOR AVAILABILITY
         // ==========================================
 
         if (!donor.isAvailable()) {
@@ -178,9 +196,8 @@ public class DonorRequestResponseService {
             );
         }
 
-
         // ==========================================
-        // 5. FIND EXISTING RECOMMENDATION
+        // 6. FIND EXISTING RECOMMENDATION
         // ==========================================
 
         DonorRequestResponse response =
@@ -191,68 +208,69 @@ public class DonorRequestResponseService {
                         )
                         .orElse(null);
 
-
         // ==========================================
-        // 6. CREATE RESPONSE IF NOT RECOMMENDED
+        // 7. CREATE RESPONSE IF NOT RECOMMENDED
         // ==========================================
 
         if (response == null) {
 
-            response = new DonorRequestResponse();
+            response =
+                    new DonorRequestResponse();
 
             response.setBloodRequest(request);
-
             response.setDonor(donor);
 
             response.setMatchScore(0.0);
-
             response.setDistance(999.0);
 
-            response.setRecommendedAt(LocalDateTime.now());
+            response.setRecommendedAt(
+                    LocalDateTime.now()
+            );
 
             response.setResponse("PENDING");
         }
 
-
         // ==========================================
-        // 7. PREVENT DUPLICATE RESPONSE
+        // 8. PREVENT DUPLICATE RESPONSE
         // ==========================================
 
-        if ("ACCEPTED".equalsIgnoreCase(response.getResponse())) {
+        if ("ACCEPTED".equalsIgnoreCase(
+                response.getResponse()
+        )) {
 
             throw new RuntimeException(
                     "You have already accepted this request"
             );
         }
 
-
-        if ("DECLINED".equalsIgnoreCase(response.getResponse())) {
+        if ("DECLINED".equalsIgnoreCase(
+                response.getResponse()
+        )) {
 
             throw new RuntimeException(
                     "You have already declined this request"
             );
         }
 
-
         // ==========================================
-        // 8. ACCEPT REQUEST
+        // 9. ACCEPT REQUEST
         // ==========================================
 
         response.setResponse("ACCEPTED");
 
-        response.setRespondedAt(LocalDateTime.now());
-
+        response.setRespondedAt(
+                LocalDateTime.now()
+        );
 
         // ==========================================
-        // 9. SAVE DONOR RESPONSE
+        // 10. SAVE DONOR RESPONSE
         // ==========================================
 
         DonorRequestResponse savedResponse =
                 responseRepository.save(response);
 
-
         // ==========================================
-        // 10. NOTIFY REQUESTER
+        // 11. NOTIFY REQUESTER
         // ==========================================
 
         if (request.getRequester() != null) {
@@ -274,16 +292,14 @@ public class DonorRequestResponseService {
             );
         }
 
-
         // ==========================================
-        // 11. CHECK AUTOMATIC FULFILLMENT
+        // 12. CHECK AUTOMATIC FULFILLMENT
         // ==========================================
 
         checkAndUpdateFulfillment(request);
 
-
         // ==========================================
-        // 12. RETURN RESPONSE
+        // 13. RETURN RESPONSE
         // ==========================================
 
         return savedResponse;
@@ -365,7 +381,8 @@ public class DonorRequestResponseService {
 
     public DonorRequestResponse declineRequest(
             Long requestId,
-            Long userId) {
+            String email
+    ) {
 
         // ==========================================
         // 1. FIND BLOOD REQUEST
@@ -380,35 +397,47 @@ public class DonorRequestResponseService {
                                 )
                         );
 
-
         // ==========================================
         // 2. CHECK REQUEST STATUS
         // ==========================================
 
-        if (!"PENDING".equalsIgnoreCase(request.getStatus())) {
+        if (!"PENDING".equalsIgnoreCase(
+                request.getStatus()
+        )) {
 
             throw new RuntimeException(
                     "This blood request is no longer accepting responses"
             );
         }
 
+        // ==========================================
+        // 3. FIND AUTHENTICATED USER
+        // ==========================================
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
 
         // ==========================================
-        // 3. FIND DONOR PROFILE
+        // 4. FIND DONOR PROFILE
         // ==========================================
 
         DonorProfile donor =
                 donorProfileRepository
-                        .findByUserId(userId)
+                        .findByUserId(user.getId())
                         .orElseThrow(() ->
                                 new RuntimeException(
                                         "Donor profile not found for this user"
                                 )
                         );
 
-
         // ==========================================
-        // 4. FIND RECOMMENDATION
+        // 5. FIND RECOMMENDATION
         // ==========================================
 
         DonorRequestResponse response =
@@ -423,46 +452,47 @@ public class DonorRequestResponseService {
                                 )
                         );
 
-
         // ==========================================
-        // 5. CHECK ALREADY RESPONDED
+        // 6. CHECK ALREADY RESPONDED
         // ==========================================
 
-        if ("ACCEPTED".equalsIgnoreCase(response.getResponse())) {
+        if ("ACCEPTED".equalsIgnoreCase(
+                response.getResponse()
+        )) {
 
             throw new RuntimeException(
                     "You have already accepted this request"
             );
         }
 
-
-        if ("DECLINED".equalsIgnoreCase(response.getResponse())) {
+        if ("DECLINED".equalsIgnoreCase(
+                response.getResponse()
+        )) {
 
             throw new RuntimeException(
                     "You have already declined this request"
             );
         }
 
-
         // ==========================================
-        // 6. DECLINE REQUEST
+        // 7. DECLINE REQUEST
         // ==========================================
 
         response.setResponse("DECLINED");
 
-        response.setRespondedAt(LocalDateTime.now());
-
+        response.setRespondedAt(
+                LocalDateTime.now()
+        );
 
         // ==========================================
-        // 7. SAVE
+        // 8. SAVE
         // ==========================================
 
         DonorRequestResponse savedResponse =
                 responseRepository.save(response);
 
-
         // ==========================================
-        // 8. NOTIFY REQUESTER
+        // 9. NOTIFY REQUESTER
         // ==========================================
 
         if (request.getRequester() != null) {
@@ -483,7 +513,6 @@ public class DonorRequestResponseService {
                     request.getId()
             );
         }
-
 
         return savedResponse;
     }
@@ -615,5 +644,22 @@ public class DonorRequestResponseService {
                 .findByDonorId(
                         donorId
                 );
+    }
+
+    public List<DonorRequestResponse> getResponsesByUserEmail(String email) {
+
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found")
+                );
+
+        DonorProfile donor = donorProfileRepository
+                .findByUserId(user.getId())
+                .orElseThrow(() ->
+                        new RuntimeException("Donor profile not found")
+                );
+
+        return responseRepository.findByDonorId(donor.getId());
     }
 }

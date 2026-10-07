@@ -4,9 +4,8 @@ import com.BloodDonorFinderApp.demo.entity.User;
 import com.BloodDonorFinderApp.demo.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -19,43 +18,47 @@ public class UserController {
         this.userService = userService;
     }
 
+    // Public - registration
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        User createdUser = userService.createUser(user);
-        return new ResponseEntity<>(createdUser, HttpStatus.CREATED);
-    }
-
-    @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-
-        return userService.getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/email/{email}")
-    public ResponseEntity<User> getUserByEmail(
-            @PathVariable String email
+    public ResponseEntity<User> createUser(
+            @RequestBody User user
     ) {
+
+        User createdUser = userService.createUser(user);
+
+        return new ResponseEntity<>(
+                createdUser,
+                HttpStatus.CREATED
+        );
+    }
+
+    // Get currently logged-in user's profile
+    @GetMapping("/me")
+    public ResponseEntity<User> getCurrentUser(
+            Authentication authentication
+    ) {
+
+        String email = authentication.getName();
 
         return userService.getUserByEmail(email)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(
-            @PathVariable Long id,
-            @RequestBody User user
+
+    // Update currently logged-in user's profile
+    @PutMapping("/me")
+    public ResponseEntity<User> updateCurrentUser(
+            @RequestBody User updatedUser,
+            Authentication authentication
     ) {
 
-        User updatedUser = userService.updateUser(id, user);
+        String email = authentication.getName();
 
-        return ResponseEntity.ok(updatedUser);
+        User updated = userService.updateUserByEmail(
+                email,
+                updatedUser
+        );
+
+        return ResponseEntity.ok(updated);
     }
-
 }
