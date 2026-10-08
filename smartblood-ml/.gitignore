@@ -1,0 +1,33 @@
+# Virtual Environments (never push these to GitHub)
+venv/
+.venv/
+env/
+
+# Python caching
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Large Data & Datasets (keep your raw data out of GitHub)
+data/
+*.csv
+*.json
+*.h5
+
+# Large ML Models & Weights (use tools like Git LFS if you actually need to track them)
+*.pkl
+*.joblib
+*.pth
+*.onnx
+*.pb
+models/
+
+# Environment variables / API Keys
+.env
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+git status
