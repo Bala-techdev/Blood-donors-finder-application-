@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
@@ -12,7 +11,7 @@ function Register() {
         email: "",
         password: "",
         phone: "",
-        role: "USER"
+        role: "DONOR"
     });
 
     const [loading, setLoading] = useState(false);
@@ -23,6 +22,18 @@ function Register() {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
+        });
+    };
+
+    const fillDemoDonor = () => {
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        setError("");
+        setFormData({
+            name: `Karthik Donor ${randomNum}`,
+            email: `karthik${randomNum}@smartblood.org`,
+            password: "password123",
+            phone: "9876543210",
+            role: "DONOR"
         });
     };
 
@@ -54,13 +65,12 @@ function Register() {
                 email: "",
                 password: "",
                 phone: "",
-                role: "USER"
+                role: "DONOR"
             });
 
             setTimeout(() => {
                 navigate("/login");
-            }, 1500);
-
+            }, 1200);
         } catch (err) {
             if (err.response?.data?.message) {
                 setError(err.response.data.message);
@@ -74,18 +84,14 @@ function Register() {
 
     return (
         <div className="register-page">
-
             <div className="register-container">
-
                 {/* LEFT SIDE */}
                 <div className="register-info">
-
                     <Link to="/" className="register-logo">
                         🩸 Blood<span>Donor</span>
                     </Link>
 
                     <div className="register-info-content">
-
                         <span className="register-label">
                             SAVE LIVES • BECOME A HERO
                         </span>
@@ -96,28 +102,26 @@ function Register() {
                         </h1>
 
                         <p>
-                            Join our community of blood donors and help
-                            someone when they need it most.
+                            Join our intelligent community of verified blood donors and respond when hospitals near you need urgent help.
                         </p>
 
                         <div className="register-benefits">
-
                             <div className="benefit">
-                                <div className="benefit-icon">✓</div>
+                                <div className="benefit-icon">🤖</div>
                                 <div>
-                                    <strong>Help Save Lives</strong>
+                                    <strong>Smart AI Matching</strong>
                                     <small>
-                                        One donation can make a difference.
+                                        Get matched only when you are eligible and nearby.
                                     </small>
                                 </div>
                             </div>
 
                             <div className="benefit">
-                                <div className="benefit-icon">📍</div>
+                                <div className="benefit-icon">🩺</div>
                                 <div>
-                                    <strong>Connect Nearby</strong>
+                                    <strong>90-Day Cooldown Protection</strong>
                                     <small>
-                                        Find people who need your help.
+                                        Automatic recovery interval tracking after every donation.
                                     </small>
                                 </div>
                             </div>
@@ -125,39 +129,64 @@ function Register() {
                             <div className="benefit">
                                 <div className="benefit-icon">🔒</div>
                                 <div>
-                                    <strong>Secure Platform</strong>
+                                    <strong>Privacy First</strong>
                                     <small>
-                                        Your information stays protected.
+                                        Contact details are shared only when you accept a request.
                                     </small>
                                 </div>
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
-
 
                 {/* RIGHT SIDE */}
                 <div className="register-form-section">
-
                     <div className="register-form-card">
-
                         <div className="form-header">
-
-                            <div className="form-icon">
-                                🩸
-                            </div>
-
+                            <div className="form-icon">🩸</div>
                             <h2>Create Your Account</h2>
-
-                            <p>
-                                Register to join the BloodDonor community.
-                            </p>
-
+                            <p>Register to join the SmartBlood community.</p>
                         </div>
 
+                        {/* 1-CLICK DEMO AUTOFILL */}
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "8px 12px",
+                                marginBottom: "14px",
+                                background: "#f8fafc",
+                                border: "1px dashed #cbd5e1",
+                                borderRadius: "8px"
+                            }}
+                        >
+                            <span
+                                style={{
+                                    fontSize: "12px",
+                                    fontWeight: "600",
+                                    color: "#475569"
+                                }}
+                            >
+                                ⚡ Quick Demo Registration:
+                            </span>
+                            <button
+                                type="button"
+                                onClick={fillDemoDonor}
+                                style={{
+                                    background: "#ffe4e6",
+                                    color: "#be123c",
+                                    border: "1px solid #fda4af",
+                                    padding: "4px 10px",
+                                    borderRadius: "6px",
+                                    fontSize: "12px",
+                                    fontWeight: "700",
+                                    cursor: "pointer"
+                                }}
+                            >
+                                Fill Sample Donor
+                            </button>
+                        </div>
 
                         {error && (
                             <div className="form-message error-message">
@@ -171,13 +200,9 @@ function Register() {
                             </div>
                         )}
 
-
                         <form onSubmit={handleSubmit}>
-
                             <div className="form-group">
-
                                 <label>Full Name</label>
-
                                 <input
                                     type="text"
                                     name="name"
@@ -185,14 +210,10 @@ function Register() {
                                     value={formData.name}
                                     onChange={handleChange}
                                 />
-
                             </div>
 
-
                             <div className="form-group">
-
                                 <label>Email Address</label>
-
                                 <input
                                     type="email"
                                     name="email"
@@ -200,16 +221,11 @@ function Register() {
                                     value={formData.email}
                                     onChange={handleChange}
                                 />
-
                             </div>
 
-
                             <div className="form-row">
-
                                 <div className="form-group">
-
                                     <label>Phone Number</label>
-
                                     <input
                                         type="tel"
                                         name="phone"
@@ -217,36 +233,25 @@ function Register() {
                                         value={formData.phone}
                                         onChange={handleChange}
                                     />
-
                                 </div>
 
                                 <div className="form-group">
-
                                     <label>Account Type</label>
-
                                     <select
                                         name="role"
                                         value={formData.role}
                                         onChange={handleChange}
                                     >
+                                        <option value="DONOR">Donor</option>
                                         <option value="USER">
-                                            User
-                                        </option>
-
-                                        <option value="DONOR">
-                                            Donor
+                                            Requester / Patient
                                         </option>
                                     </select>
-
                                 </div>
-
                             </div>
 
-
                             <div className="form-group">
-
                                 <label>Password</label>
-
                                 <input
                                     type="password"
                                     name="password"
@@ -254,23 +259,18 @@ function Register() {
                                     value={formData.password}
                                     onChange={handleChange}
                                 />
-
                             </div>
 
-
                             <div className="terms">
-
                                 <input
                                     type="checkbox"
+                                    defaultChecked
                                     required
                                 />
-
                                 <span>
                                     I agree to the Terms & Privacy Policy.
                                 </span>
-
                             </div>
-
 
                             <button
                                 type="submit"
@@ -279,28 +279,17 @@ function Register() {
                             >
                                 {loading
                                     ? "Creating Account..."
-                                    : "Create Account"}
+                                    : "Create Account →"}
                             </button>
-
                         </form>
 
-
                         <div className="login-link">
-
-                            Already have an account?
-
-                            <Link to="/login">
-                                Login
-                            </Link>
-
+                            Already have an account?{" "}
+                            <Link to="/login">Login</Link>
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
     );
 }
