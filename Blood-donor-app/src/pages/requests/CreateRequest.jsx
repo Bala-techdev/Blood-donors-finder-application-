@@ -21,6 +21,12 @@ function CreateRequest() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const now = new Date();
+    const today = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0"),
+    ].join("-");
 
     const handleChange = (e) => {
 
@@ -39,15 +45,33 @@ function CreateRequest() {
         setError("");
         setSuccess("");
 
-        // Basic validation
-        if (
-            !formData.patientName ||
-            !formData.bloodGroup ||
-            !formData.hospitalName ||
-            !formData.location ||
-            !formData.requiredDate
-        ) {
-            setError("Please fill all required fields.");
+        const units = Number(formData.units);
+        const trimmedPatientName = formData.patientName.trim();
+        const trimmedHospitalName = formData.hospitalName.trim();
+        const trimmedLocation = formData.location.trim();
+
+        if (!trimmedPatientName) {
+            setError("Patient name is required.");
+            return;
+        }
+
+        if (!formData.bloodGroup) {
+            setError("Please select a blood group.");
+            return;
+        }
+
+        if (!Number.isInteger(units) || units < 1 || units > 10) {
+            setError("Units must be between 1 and 10.");
+            return;
+        }
+
+        if (!trimmedHospitalName || !trimmedLocation) {
+            setError("Hospital name and location are required.");
+            return;
+        }
+
+        if (!formData.requiredDate || formData.requiredDate < today) {
+            setError("Required date must be today or a future date.");
             return;
         }
 
@@ -56,34 +80,24 @@ function CreateRequest() {
 
             setLoading(true);
 
-            // Get logged-in user
-            const storedUser =
-                localStorage.getItem("bloodDonorUser");
-
-            if (!storedUser) {
+            if (!localStorage.getItem("bloodDonorToken")) {
                 setError("Please login before creating a blood request.");
                 return;
             }
-
-            const user = JSON.parse(storedUser);
 
 
             // Data expected by Spring Boot
             const requestData = {
 
-                requester: {
-                    id: user.id
-                },
-
-                patientName: formData.patientName,
+                patientName: trimmedPatientName,
 
                 bloodGroup: formData.bloodGroup,
 
-                units: Number(formData.units),
+                units,
 
-                hospitalName: formData.hospitalName,
+                hospitalName: trimmedHospitalName,
 
-                location: formData.location,
+                location: trimmedLocation,
 
                 urgency: formData.urgency,
 
@@ -429,6 +443,7 @@ function CreateRequest() {
                                     name="requiredDate"
                                     value={formData.requiredDate}
                                     onChange={handleChange}
+                                    min={today}
                                 />
 
                             </div>

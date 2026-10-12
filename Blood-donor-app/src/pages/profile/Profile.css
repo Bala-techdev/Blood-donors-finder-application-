@@ -280,6 +280,18 @@
     cursor: not-allowed;
 }
 
+.profile-availability-field {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.profile-availability-field input {
+    width: auto;
+    accent-color: #e31e24;
+}
+
 
 /* =========================
    SAVE
@@ -390,6 +402,10 @@
     background: #22c55e;
 
     border-radius: 50%;
+}
+
+.available-status .profile-status-inactive {
+    background: #9ca3af;
 }
 
 .donor-status-card > p {

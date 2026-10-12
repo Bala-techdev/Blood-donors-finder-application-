@@ -7,6 +7,7 @@ import com.BloodDonorFinderApp.demo.repository.DonorRequestResponseRepository;
 import com.BloodDonorFinderApp.demo.service.EmergencyPriorityService;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -53,19 +54,20 @@ public class EmergencyController {
 
     @GetMapping("/{requestId}/status")
     public ResponseEntity<?> getEmergencyStatus(
-            @PathVariable Long requestId
+            @PathVariable Long requestId,
+            Authentication authentication
     ) {
 
-        try {
-
-            BloodRequest request =
-                    bloodRequestRepository
+            try {
+                BloodRequest request =
+                        bloodRequestRepository
                             .findById(requestId)
                             .orElseThrow(() ->
                                     new RuntimeException(
                                             "Blood request not found"
                                     )
                             );
+            assertOwner(request, authentication);
 
 
             // ==========================================
@@ -118,14 +120,11 @@ public class EmergencyController {
 
             String escalationStatus;
 
-            if (
-                    "FULFILLED".equalsIgnoreCase(
-                            request.getStatus()
-                    )
-            ) {
+            if ("FULFILLED".equalsIgnoreCase(request.getStatus())
+                    || "CANCELLED".equalsIgnoreCase(request.getStatus())) {
 
                 escalationStatus =
-                        "FULFILLED";
+                        request.getStatus();
 
             } else if (
                     remainingUnits > 0 &&
@@ -230,10 +229,16 @@ public class EmergencyController {
 
     @GetMapping("/{requestId}/accepted")
     public ResponseEntity<?> getAcceptedDonors(
-            @PathVariable Long requestId
+            @PathVariable Long requestId,
+            Authentication authentication
     ) {
 
         try {
+            BloodRequest request = bloodRequestRepository.findById(requestId)
+                    .orElseThrow(() -> new RuntimeException(
+                            "Blood request not found"
+                    ));
+            assertOwner(request, authentication);
 
             List<?> acceptedDonors =
                     responseRepository
@@ -256,6 +261,19 @@ public class EmergencyController {
                                     e.getMessage()
                             )
                     );
+        }
+    }
+
+    private void assertOwner(
+            BloodRequest request,
+            Authentication authentication
+    ) {
+        if (request.getRequester() == null
+                || !request.getRequester().getEmail()
+                .equals(authentication.getName())) {
+            throw new RuntimeException(
+                    "Only the request owner can view emergency details"
+            );
         }
     }
 }

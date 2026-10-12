@@ -1,5 +1,6 @@
 package com.BloodDonorFinderApp.demo.service;
 
+import com.BloodDonorFinderApp.demo.dto.AcceptedDonorDTO;
 import com.BloodDonorFinderApp.demo.entity.BloodRequest;
 import com.BloodDonorFinderApp.demo.entity.DonorProfile;
 import com.BloodDonorFinderApp.demo.entity.DonorRequestResponse;
@@ -9,7 +10,10 @@ import com.BloodDonorFinderApp.demo.repository.DonorRequestResponseRepository;
 import com.BloodDonorFinderApp.demo.entity.User;
 import com.BloodDonorFinderApp.demo.repository.UserRepository;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,6 +27,7 @@ public class DonorRequestResponseService {
     private final DonorProfileRepository donorProfileRepository;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final DonorMatchingService donorMatchingService;
 
     // ==========================================
     // CONSTRUCTOR
@@ -33,13 +38,15 @@ public class DonorRequestResponseService {
             BloodRequestRepository bloodRequestRepository,
             DonorProfileRepository donorProfileRepository,
             NotificationService notificationService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            DonorMatchingService donorMatchingService
     ) {
         this.responseRepository = responseRepository;
         this.bloodRequestRepository = bloodRequestRepository;
         this.donorProfileRepository = donorProfileRepository;
         this.notificationService = notificationService;
         this.userRepository = userRepository;
+        this.donorMatchingService = donorMatchingService;
     }
 
 
@@ -110,11 +117,8 @@ public class DonorRequestResponseService {
                         "New Blood Request",
                         "You have been recommended for a "
                                 + request.getBloodGroup()
-                                + " blood request for "
-                                + request.getPatientName()
-                                + " at "
-                                + request.getHospitalName()
-                                + ".",
+                                + " blood request. Please review the request "
+                                + "details if you are available.",
                         request.getId()
                 );
             }
@@ -128,6 +132,7 @@ public class DonorRequestResponseService {
     // DONOR ACCEPTS BLOOD REQUEST
     // =========================================================
 
+    @Transactional
     public DonorRequestResponse respondToRequest(
             Long requestId,
             String email
@@ -184,6 +189,13 @@ public class DonorRequestResponseService {
                                         "Donor profile not found for this user"
                                 )
                         );
+
+        if (request.getRequester() != null
+                && request.getRequester().getId().equals(user.getId())) {
+            throw new RuntimeException(
+                    "You cannot respond to your own blood request"
+            );
+        }
 
         // ==========================================
         // 5. CHECK DONOR AVAILABILITY
@@ -275,28 +287,22 @@ public class DonorRequestResponseService {
 
         if (request.getRequester() != null) {
 
-            String donorName =
-                    donor.getUser() != null
-                            ? donor.getUser().getName()
-                            : "A donor";
-
             notificationService.createNotification(
                     request.getRequester().getId(),
                     "DONOR_ACCEPTED",
                     "Donor Accepted Your Request",
-                    donorName
-                            + " accepted your blood request for "
-                            + request.getPatientName()
-                            + ".",
+                    "A donor accepted your blood request.",
                     request.getId()
             );
         }
 
         // ==========================================
-        // 12. CHECK AUTOMATIC FULFILLMENT
+        // 12. KEEP THE REQUEST OPEN
         // ==========================================
-
-        checkAndUpdateFulfillment(request);
+        // A donor accepting means they are willing to help; it does not
+        // prove that the blood donation has already happened. Keep the
+        // request PENDING so it remains visible in the active requests list.
+        // The requester can later mark it FULFILLED after the donation.
 
         // ==========================================
         // 13. RETURN RESPONSE
@@ -307,78 +313,10 @@ public class DonorRequestResponseService {
 
 
     // =========================================================
-    // AUTOMATIC FULFILLMENT CHECK
-    // =========================================================
-
-    private void checkAndUpdateFulfillment(
-            BloodRequest request) {
-
-        // ------------------------------------------
-        // COUNT ACCEPTED DONORS
-        // ------------------------------------------
-
-        long acceptedCount =
-                responseRepository
-                        .countByBloodRequestIdAndResponse(
-                                request.getId(),
-                                "ACCEPTED"
-                        );
-
-
-        // ------------------------------------------
-        // REQUIRED UNITS
-        // ------------------------------------------
-
-        int requiredUnits =
-                request.getUnits() == null
-                        ? 1
-                        : request.getUnits();
-
-
-        // ------------------------------------------
-        // FULFILLMENT CHECK
-        //
-        // DEMO RULE:
-        // 1 ACCEPTED DONOR = 1 UNIT
-        // ------------------------------------------
-
-        if (acceptedCount >= requiredUnits) {
-
-            // Prevent duplicate fulfillment notification
-            boolean wasAlreadyFulfilled =
-                    "FULFILLED".equalsIgnoreCase(
-                            request.getStatus()
-                    );
-
-            request.setStatus("FULFILLED");
-
-            bloodRequestRepository.save(request);
-
-            // ------------------------------------------
-            // NOTIFY REQUESTER
-            // ------------------------------------------
-
-            if (!wasAlreadyFulfilled
-                    && request.getRequester() != null) {
-
-                notificationService.createNotification(
-                        request.getRequester().getId(),
-                        "REQUEST_FULFILLED",
-                        "Blood Request Fulfilled",
-                        "Your blood request for "
-                                + request.getPatientName()
-                                + " has been fulfilled.",
-                        request.getId()
-                );
-            }
-        }
-    }
-
-
-    // =========================================================
     // DONOR DECLINES BLOOD REQUEST
     // =========================================================
 
+    @Transactional
     public DonorRequestResponse declineRequest(
             Long requestId,
             String email
@@ -497,19 +435,11 @@ public class DonorRequestResponseService {
 
         if (request.getRequester() != null) {
 
-            String donorName =
-                    donor.getUser() != null
-                            ? donor.getUser().getName()
-                            : "A donor";
-
             notificationService.createNotification(
                     request.getRequester().getId(),
                     "DONOR_DECLINED",
                     "Donor Declined Request",
-                    donorName
-                            + " declined your blood request for "
-                            + request.getPatientName()
-                            + ".",
+                    "A donor declined your blood request.",
                     request.getId()
             );
         }
@@ -522,11 +452,13 @@ public class DonorRequestResponseService {
     // AI RECOMMEND SINGLE DONOR
     // =========================================================
 
+    @Transactional
     public DonorRequestResponse recommendDonor(
             Long requestId,
             Long donorId,
             Double matchScore,
-            Double distance) {
+            Double distance,
+            String email) {
 
         BloodRequest request =
                 bloodRequestRepository
@@ -537,6 +469,19 @@ public class DonorRequestResponseService {
                                 )
                         );
 
+        User requester = userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found")
+                );
+
+        if (request.getRequester() == null
+                || !request.getRequester().getId().equals(requester.getId())) {
+            throw new RuntimeException(
+                    "You are not authorized to recommend donors for this request"
+            );
+        }
+
 
         DonorProfile donor =
                 donorProfileRepository
@@ -544,6 +489,18 @@ public class DonorRequestResponseService {
                         .orElseThrow(() ->
                                 new RuntimeException(
                                         "Donor not found"
+                                )
+                        );
+
+        DonorMatchingService.DonorMatchResult backendMatch =
+                donorMatchingService.findBestDonors(request)
+                        .stream()
+                        .filter(match -> match.getDonor() != null
+                                && donorId.equals(match.getDonor().getId()))
+                        .findFirst()
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Donor is not currently eligible for this request"
                                 )
                         );
 
@@ -577,9 +534,9 @@ public class DonorRequestResponseService {
         }
 
 
-        response.setMatchScore(matchScore);
+        response.setMatchScore(backendMatch.getScore());
 
-        response.setDistance(distance);
+        response.setDistance(backendMatch.getDistance());
 
 
         // ==========================================
@@ -623,6 +580,47 @@ public class DonorRequestResponseService {
 
     public List<DonorRequestResponse>
     getResponsesForRequest(
+            Long requestId,
+            String email
+    ) {
+
+        BloodRequest request = bloodRequestRepository
+                .findById(requestId)
+                .orElseThrow(() ->
+                        new RuntimeException("Blood request not found")
+                );
+
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("User not found")
+                );
+
+        if (request.getRequester() != null
+                && request.getRequester().getId().equals(user.getId())) {
+
+            return responseRepository.findByBloodRequestId(requestId);
+        }
+
+        DonorProfile donorProfile = donorProfileRepository
+                .findByUserId(user.getId())
+                .orElse(null);
+
+        if (donorProfile == null) {
+            throw new RuntimeException(
+                    "You are not authorized to view this request's donor responses"
+            );
+        }
+
+        return responseRepository
+                .findByBloodRequestIdAndDonorId(requestId, donorProfile.getId())
+                .map(List::of)
+                .orElseGet(List::of);
+    }
+
+
+    public List<DonorRequestResponse>
+    getResponsesForRequest(
             Long requestId) {
 
         return responseRepository
@@ -661,5 +659,89 @@ public class DonorRequestResponseService {
                 );
 
         return responseRepository.findByDonorId(donor.getId());
+    }
+
+
+
+    // =========================================================
+// GET ACCEPTED DONORS FOR THE AUTHENTICATED REQUESTER
+// =========================================================
+
+    public List<AcceptedDonorDTO> getAcceptedDonorsForRequester(
+            Long requestId,
+            String email
+    ) {
+
+        // 1. Find the blood request.
+        BloodRequest request = bloodRequestRepository
+                .findById(requestId)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Blood request not found"
+                        )
+                );
+
+        // 2. Verify that the authenticated user owns this request.
+        User user = userRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "User not found"
+                        )
+                );
+
+        if (request.getRequester() == null
+                || !request.getRequester()
+                .getId()
+                .equals(user.getId())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You are not authorized to view responses for this request"
+            );
+        }
+
+        // 3. Retrieve responses for this specific request.
+        List<DonorRequestResponse> responses =
+                responseRepository.findByBloodRequestId(requestId);
+
+        // 4. Return only accepted donors and permitted details.
+        return responses.stream()
+                .filter(response ->
+                        "ACCEPTED".equalsIgnoreCase(
+                                response.getResponse()
+                        )
+                )
+                .filter(response ->
+                        response.getDonor() != null
+                )
+                .map(response -> {
+                    var donor = response.getDonor();
+                    var donorUser = donor.getUser();
+
+                    return new AcceptedDonorDTO(
+                            response.getId(),
+                            donor.getId(),
+                            donorUser != null
+                                    ? donorUser.getName()
+                                    : "Donor",
+                            donorUser != null
+                                    ? donorUser.getEmail()
+                                    : null,
+                            donorUser != null
+                                    ? donorUser.getPhone()
+                                    : null,
+                            donor.getBloodGroup(),
+                            donor.getLocation(),
+                            donor.isAvailable(),
+                            donor.isVerified(),
+                            donor.getTotalDonations(),
+                            response.getResponse(),
+                            response.getRespondedAt()
+                    );
+                })
+                .toList();
     }
 }

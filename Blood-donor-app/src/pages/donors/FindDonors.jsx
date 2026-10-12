@@ -347,7 +347,28 @@ function FindDonors() {
 
                         // ML prediction
                         responseProbability:
-                            item.responseProbability
+                            item.responseProbability,
+
+                        explanation:
+                            item.explanation,
+
+                        ruleBasedScore:
+                            item.ruleBasedScore,
+
+                        urgencyBoost:
+                            item.urgencyBoost,
+
+                        responsePredictionAvailable:
+                            item.responsePredictionAvailable,
+
+                        responseModelVersion:
+                            item.responseModelVersion,
+
+                        factualReasons:
+                            item.factualReasons,
+
+                        predictionReasons:
+                            item.predictionReasons
 
                     };
 

@@ -51,6 +51,9 @@ public class BloodRequest {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "fulfilled_at")
+    private LocalDateTime fulfilledAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -168,5 +171,13 @@ public class BloodRequest {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public LocalDateTime getFulfilledAt() {
+        return fulfilledAt;
+    }
+
+    public void setFulfilledAt(LocalDateTime fulfilledAt) {
+        this.fulfilledAt = fulfilledAt;
     }
 }

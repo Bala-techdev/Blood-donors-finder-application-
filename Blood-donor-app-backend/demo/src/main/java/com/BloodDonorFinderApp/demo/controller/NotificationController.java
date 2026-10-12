@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -34,6 +37,33 @@ public class NotificationController {
 
         return ResponseEntity.ok(
                 notificationService.getUserNotificationsByEmail(email)
+        );
+    }
+
+    @GetMapping("/me/page")
+    public ResponseEntity<Page<Notification>> getMyNotificationsPage(
+            org.springframework.security.core.Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size
+    ) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException(
+                    "Page must be non-negative and size must be between 1 and 100"
+            );
+        }
+
+        return ResponseEntity.ok(
+                notificationService.getUserNotificationsByEmail(
+                        authentication.getName(),
+                        PageRequest.of(
+                                page,
+                                size,
+                                Sort.by(
+                                        Sort.Direction.DESC,
+                                        "createdAt"
+                                )
+                        )
+                )
         );
     }
 

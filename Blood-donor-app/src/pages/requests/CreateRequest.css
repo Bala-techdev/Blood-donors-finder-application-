@@ -2,6 +2,24 @@
     min-height: 100vh;
 
     background: #f8fafc;
+    .create-request-main {
+        padding: 16px 12px;
+    }
+
+    .request-form-card {
+        padding: 20px 16px;
+    }
+
+    .request-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .request-form-group input,
+    .request-form-group select,
+    .request-form-group textarea {
+        min-width: 0;
+        width: 100%;
+    }
 }
 
 

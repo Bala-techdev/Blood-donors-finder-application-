@@ -54,8 +54,10 @@ function EmergencyDashboard() {
 
                                 return {
                                     ...request,
-                                    emergency:
-                                        statusResponse.data
+                                    emergency: statusResponse.data,
+                                    coordinator: (await api.get(
+                                        `/emergency/${request.id}/coordinator`
+                                    )).data
                                 };
 
                             } catch (err) {
@@ -682,6 +684,40 @@ function EmergencyDashboard() {
                                         )}
 
                                     </div>
+
+                                    {request.coordinator && (
+                                        <section className="coordinator-panel"
+                                            aria-label={`AI coordinator recommendation for request ${request.id}`}>
+                                            <div className="coordinator-heading">
+                                                <strong>AI coordinator</strong>
+                                                <span className={`coordinator-action ${getEscalationClass(
+                                                    request.coordinator.recommendedAction
+                                                )}`}>
+                                                    {request.coordinator.recommendedAction}
+                                                </span>
+                                            </div>
+                                            <p>
+                                                {request.coordinator.reasons?.[0]}
+                                            </p>
+                                            <div className="coordinator-evidence">
+                                                <span>
+                                                    {request.coordinator.eligibleAvailableDonors} eligible available donor matches
+                                                </span>
+                                                <span>
+                                                    {request.coordinator.outstandingResponses} outstanding responses
+                                                </span>
+                                                <span>
+                                                    {request.coordinator.recentEscalations} escalation event(s)
+                                                </span>
+                                            </div>
+                                            <small>
+                                                Review recommendation before taking action.
+                                                {request.coordinator.mlPredictionsUsed
+                                                    ? " ML predictions were included."
+                                                    : " No ML prediction was used."}
+                                            </small>
+                                        </section>
+                                    )}
 
 
                                     {/* ==================================

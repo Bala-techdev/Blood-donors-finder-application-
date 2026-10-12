@@ -9,7 +9,12 @@ function Dashboard() {
 
     const [donorCount, setDonorCount] = useState(0);
     const [requests, setRequests] = useState([]);
+    const [dashboardStats, setDashboardStats] = useState(null);
+    const [dashboardError, setDashboardError] = useState("");
     const [loadingStats, setLoadingStats] = useState(true);
+    const [demandForecast, setDemandForecast] = useState(null);
+    const [shortageRisk, setShortageRisk] = useState(null);
+    const [mlMonitoring, setMlMonitoring] = useState(null);
 
     const storedUser =
         localStorage.getItem("bloodDonorUser");
@@ -22,13 +27,11 @@ function Dashboard() {
     /* =========================
        LOGOUT
     ========================= */
-
-    const handleLogout = () => {
-
-        localStorage.removeItem("bloodDonorUser");
-
-        navigate("/login");
-    };
+        const handleLogout = () => {
+            localStorage.removeItem("bloodDonorUser");
+            localStorage.removeItem("bloodDonorToken");
+            navigate("/login");
+        };
 
 
     /* =========================
@@ -43,23 +46,20 @@ function Dashboard() {
 
                 setLoadingStats(true);
 
-                const [
-                    donorsResponse,
-                    requestsResponse
-                ] = await Promise.all([
-                    api.get("/donors"),
-                    api.get("/requests")
+                setDashboardError("");
+                const [dashboardResponse, demandResponse, shortageResponse, monitoringResponse] = await Promise.all([
+                    api.get("/dashboard/me"),
+                    api.get("/analytics/demand"),
+                    api.get("/analytics/shortage-risk"),
+                    api.get("/ml-monitoring")
                 ]);
-
-
-                setDonorCount(
-                    donorsResponse.data.length
-                );
-
-
-                setRequests(
-                    requestsResponse.data
-                );
+                const stats = dashboardResponse.data;
+                setDashboardStats(stats);
+                setDonorCount(stats.donorCount || 0);
+                setRequests(stats.requests || []);
+                setDemandForecast(demandResponse.data);
+                setShortageRisk(shortageResponse.data);
+                setMlMonitoring(monitoringResponse.data);
 
 
             } catch (error) {
@@ -67,6 +67,9 @@ function Dashboard() {
                 console.error(
                     "Dashboard data error:",
                     error
+                );
+                setDashboardError(
+                    "Unable to load dashboard data. Please try again."
                 );
 
             } finally {
@@ -87,11 +90,7 @@ function Dashboard() {
        STATISTICS
     ========================= */
 
-    const pendingRequests =
-        requests.filter(
-            (request) =>
-                request.status === "PENDING"
-        ).length;
+    const pendingRequests = dashboardStats?.pendingRequests || 0;
 
 
     const emergencyRequests =
@@ -99,6 +98,19 @@ function Dashboard() {
             (request) =>
                 request.urgency === "EMERGENCY"
         ).length;
+
+    const fulfilledRequests = dashboardStats?.fulfilledRequests || 0;
+    const acceptedResponses = dashboardStats?.acceptedResponses || 0;
+    const profileCompletion =
+        dashboardStats?.profileCompletionPercent || 0;
+    const recentNotifications =
+        dashboardStats?.recentNotifications || [];
+    const nextDemandForecast =
+        demandForecast?.forecasts?.slice(0, 3) || [];
+    const highRiskIndicators =
+        shortageRisk?.indicators?.filter(
+            (indicator) => indicator.riskLevel === "HIGH"
+        ).slice(0, 3) || [];
 
 
     return (
@@ -240,7 +252,9 @@ function Dashboard() {
                         >
                             🔔
 
-                            <span></span>
+                            {dashboardStats?.unreadNotifications > 0 && (
+                                <span></span>
+                            )}
 
                         </Link>
 
@@ -282,6 +296,12 @@ function Dashboard() {
 
 
                 </header>
+
+                {dashboardError && (
+                    <div className="dashboard-error" role="alert">
+                        {dashboardError}
+                    </div>
+                )}
 
 
                 {/* =================================================
@@ -520,7 +540,159 @@ function Dashboard() {
 
                     </div>
 
+                    <div className="dashboard-stat-card">
+                        <div className="stat-top">
+                            <span>Fulfilled Requests</span>
+                            <div className="stat-icon green">✅</div>
+                        </div>
+                        <h2>{loadingStats ? "..." : fulfilledRequests}</h2>
+                        <p>Requests completed</p>
+                    </div>
 
+                    <div className="dashboard-stat-card">
+                        <div className="stat-top">
+                            <span>Accepted Responses</span>
+                            <div className="stat-icon blue">🤝</div>
+                        </div>
+                        <h2>{loadingStats ? "..." : acceptedResponses}</h2>
+                        <p>Your donor responses</p>
+                    </div>
+
+                    <div className="dashboard-stat-card">
+                        <div className="stat-top">
+                            <span>Profile Completion</span>
+                            <div className="stat-icon orange">👤</div>
+                        </div>
+                        <h2>{loadingStats ? "..." : `${profileCompletion}%`}</h2>
+                        <p>Donor profile details</p>
+                    </div>
+
+
+                </section>
+
+                <section className="dashboard-panel demand-forecast-panel">
+                    <div className="panel-header">
+                        <div>
+                            <h2>Demand outlook</h2>
+                            <p>
+                                Aggregate monthly request counts by blood group.
+                            </p>
+                        </div>
+                    </div>
+                    {demandForecast?.dataSufficient && nextDemandForecast.length > 0 ? (
+                        <div className="demand-forecast-list">
+                            {nextDemandForecast.map((forecast) => (
+                                <div
+                                    className="demand-forecast-item"
+                                    key={`${forecast.period}-${forecast.bloodGroup}`}
+                                >
+                                    <strong>
+                                        {forecast.bloodGroup}
+                                    </strong>
+                                    <span>
+                                        {forecast.predictedRequestCount.toFixed(1)}
+                                        {" "}requests expected in {forecast.period}
+                                    </span>
+                                </div>
+                            ))}
+                            <small>
+                                Baseline forecast only; not validated demand or a
+                                guarantee of blood availability.
+                            </small>
+                        </div>
+                    ) : (
+                        <p className="dashboard-empty-state">
+                            Demand forecasting needs at least three months of
+                            dated request history. No estimate is shown yet.
+                        </p>
+                    )}
+                </section>
+
+                <section className="dashboard-panel">
+                    <div className="panel-header">
+                        <div>
+                            <h2>Shortage risk indicators</h2>
+                            <p>
+                                Observed rule-based signals for donor outreach.
+                            </p>
+                        </div>
+                    </div>
+                    {highRiskIndicators.length > 0 ? (
+                        <div className="demand-forecast-list">
+                            {highRiskIndicators.map((indicator) => (
+                                <div
+                                    className="demand-forecast-item"
+                                    key={`${indicator.bloodGroup}-${indicator.location}`}
+                                >
+                                    <strong>
+                                        {indicator.bloodGroup} · {indicator.location}
+                                    </strong>
+                                    <span>
+                                        High risk: {indicator.unresolvedRequests}
+                                        {" "}unresolved request(s),{" "}
+                                        {indicator.availableEligibleCompatibleDonors}
+                                        {" "}currently eligible compatible donor(s).
+                                    </span>
+                                </div>
+                            ))}
+                            <small>
+                                These are observed indicators, not a trained
+                                prediction or guaranteed shortage.
+                            </small>
+                        </div>
+                    ) : (
+                        <p className="dashboard-empty-state">
+                            No high-risk observed indicators are currently
+                            available.
+                        </p>
+                    )}
+                </section>
+
+                <section className="dashboard-panel ml-monitoring-panel">
+                    <div className="panel-header">
+                        <div>
+                            <h2>AI model monitoring</h2>
+                            <p>Live integration measurements and verified offline evaluation.</p>
+                        </div>
+                    </div>
+                    {mlMonitoring ? (
+                        <>
+                            <div className="demand-forecast-list">
+                                <div className="demand-forecast-item">
+                                    <strong>{mlMonitoring.modelName}</strong>
+                                    <span>
+                                        Version {mlMonitoring.modelVersion} · availability: {mlMonitoring.availability}
+                                    </span>
+                                </div>
+                                <div className="demand-forecast-item">
+                                    <span>
+                                        {mlMonitoring.predictionRequests} requests ·{" "}
+                                        {mlMonitoring.successfulPredictions} successful ·{" "}
+                                        {mlMonitoring.failedPredictions} failed ·{" "}
+                                        {mlMonitoring.fallbackPredictions} fallbacks
+                                    </span>
+                                    <span>
+                                        Average latency: {mlMonitoring.averageLatencyMs.toFixed(1)} ms
+                                    </span>
+                                </div>
+                            </div>
+                            <small>
+                                Offline metrics: F1 {mlMonitoring.offlineEvaluationMetrics.f1},
+                                {" "}ROC-AUC {mlMonitoring.offlineEvaluationMetrics.rocAuc}.
+                                {" "}{mlMonitoring.evaluationNotice}
+                                {" "}Live predictions are not labelled correct or incorrect.
+                            </small>
+                            <ul className="monitoring-warning-list">
+                            {(mlMonitoring.dataQualityWarnings || []).map((warning) => (
+                                <li key={warning}>{warning}</li>
+                            ))}
+                            </ul>
+                        </>
+                    ) : (
+                        <p className="dashboard-empty-state">
+                            Monitoring data is unavailable; the ML service may be offline.
+                        </p>
+                    )}
                 </section>
 
 
@@ -760,6 +932,42 @@ function Dashboard() {
 
                     </div>
 
+                    <div className="dashboard-panel">
+                        <div className="panel-header">
+                            <div>
+                                <h2>Recent Notifications</h2>
+                                <p>
+                                    {dashboardStats?.unreadNotifications || 0} unread
+                                </p>
+                            </div>
+                            <Link to="/notifications">View All</Link>
+                        </div>
+
+                        {loadingStats ? (
+                            <div className="dashboard-loading">
+                                <p>Loading notifications...</p>
+                            </div>
+                        ) : recentNotifications.length === 0 ? (
+                            <div className="dashboard-empty">
+                                <strong>No recent notifications</strong>
+                                <p>Updates about your activity will appear here.</p>
+                            </div>
+                        ) : (
+                            <div className="request-list">
+                                {recentNotifications.slice(0, 3).map((notification) => (
+                                    <div className="request-item" key={notification.id}>
+                                        <div className="blood-badge">
+                                            {notification.read ? "✓" : "!"}
+                                        </div>
+                                        <div className="request-info">
+                                            <strong>{notification.title}</strong>
+                                            <span>{notification.message}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                 </section>
 

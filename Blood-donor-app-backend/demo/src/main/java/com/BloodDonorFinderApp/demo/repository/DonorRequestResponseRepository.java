@@ -72,4 +72,9 @@ public interface DonorRequestResponseRepository
             String response
     );
 
+    long countByDonorIdAndResponse(
+            Long donorId,
+            String response
+    );
+
 }

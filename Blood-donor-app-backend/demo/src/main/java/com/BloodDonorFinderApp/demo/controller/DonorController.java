@@ -5,10 +5,12 @@ import com.BloodDonorFinderApp.demo.entity.DonorProfile;
 import com.BloodDonorFinderApp.demo.service.BloodRequestService;
 import com.BloodDonorFinderApp.demo.service.DonorMatchingService;
 import com.BloodDonorFinderApp.demo.service.DonorService;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -41,7 +43,6 @@ public class DonorController {
             @RequestBody DonorProfile donorProfile,
             Authentication authentication
     ) {
-
         String email = authentication.getName();
 
         DonorProfile createdDonor =
@@ -50,10 +51,9 @@ public class DonorController {
                         email
                 );
 
-        return new ResponseEntity<>(
-                createdDonor,
-                HttpStatus.CREATED
-        );
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(createdDonor);
     }
 
     // ==========================================
@@ -64,15 +64,34 @@ public class DonorController {
     public ResponseEntity<DonorProfile> getMyDonorProfile(
             Authentication authentication
     ) {
-
         String email = authentication.getName();
 
         return donorService
                 .getDonorByUserEmail(email)
                 .map(ResponseEntity::ok)
-                .orElse(
+                .orElseGet(() ->
                         ResponseEntity.notFound().build()
                 );
+    }
+
+    // ==========================================
+    // UPDATE MY DONOR PROFILE
+    // ==========================================
+
+    @PutMapping("/me")
+    public ResponseEntity<DonorProfile> updateMyDonorProfile(
+            @RequestBody DonorProfile updatedProfile,
+            Authentication authentication
+    ) {
+        String email = authentication.getName();
+
+        DonorProfile updated =
+                donorService.updateDonorProfile(
+                        email,
+                        updatedProfile
+                );
+
+        return ResponseEntity.ok(updated);
     }
 
     // ==========================================
@@ -81,10 +100,12 @@ public class DonorController {
 
     @GetMapping
     public ResponseEntity<List<DonorProfile>> getAllDonors() {
+        List<DonorProfile> donors = donorService.getAllDonors()
+                .stream()
+                .map(donorService::sanitizeDonorProfile)
+                .toList();
 
-        return ResponseEntity.ok(
-                donorService.getAllDonors()
-        );
+        return ResponseEntity.ok(donors);
     }
 
     // ==========================================
@@ -93,13 +114,25 @@ public class DonorController {
 
     @GetMapping("/{id}")
     public ResponseEntity<DonorProfile> getDonorById(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         return donorService
                 .getDonorById(id)
-                .map(ResponseEntity::ok)
-                .orElse(
+                .map(donor -> {
+                    if (donor.getUser() != null
+                            && donor.getUser().getEmail() != null
+                            && donor.getUser().getEmail().equalsIgnoreCase(authentication.getName())) {
+                        return ResponseEntity.ok(donor);
+                    }
+
+                    return ResponseEntity.ok(donorService.sanitizeDonorProfile(donor));
+                })
+                .orElseGet(() ->
                         ResponseEntity.notFound().build()
                 );
     }
@@ -116,37 +149,29 @@ public class DonorController {
             @RequestParam(required = false)
             String location
     ) {
+        List<DonorProfile> donors;
 
         if (bloodGroup != null && location != null) {
-
-            return ResponseEntity.ok(
-                    donorService.searchDonors(
-                            bloodGroup,
-                            location
-                    )
+            donors = donorService.searchDonors(
+                    bloodGroup,
+                    location
             );
-        }
-
-        if (bloodGroup != null) {
-
-            return ResponseEntity.ok(
-                    donorService.searchByBloodGroup(
-                            bloodGroup
-                    )
+        } else if (bloodGroup != null) {
+            donors = donorService.searchByBloodGroup(
+                    bloodGroup
             );
-        }
-
-        if (location != null) {
-
-            return ResponseEntity.ok(
-                    donorService.searchByLocation(
-                            location
-                    )
+        } else if (location != null) {
+            donors = donorService.searchByLocation(
+                    location
             );
+        } else {
+            donors = donorService.getAllDonors();
         }
 
         return ResponseEntity.ok(
-                donorService.getAllDonors()
+                donors.stream()
+                        .map(donorService::sanitizeDonorProfile)
+                        .toList()
         );
     }
 
@@ -160,7 +185,6 @@ public class DonorController {
             > findMatchingDonors(
             @RequestBody BloodRequest request
     ) {
-
         return ResponseEntity.ok(
                 donorMatchingService.findBestDonors(
                         request
@@ -176,33 +200,34 @@ public class DonorController {
     public ResponseEntity<?> findMatchingDonorsByRequestId(
             @PathVariable Long requestId
     ) {
-
         try {
-
             BloodRequest request =
                     bloodRequestService
                             .getRequestById(requestId)
                             .orElseThrow(() ->
-                                    new RuntimeException(
+                                    new ResponseStatusException(
+                                            HttpStatus.NOT_FOUND,
                                             "Blood request not found"
                                     )
                             );
 
             List<DonorMatchingService.DonorMatchResult>
                     matches =
-                    donorMatchingService
-                            .findBestDonors(request);
+                    donorMatchingService.findBestDonors(
+                            request
+                    );
 
             return ResponseEntity.ok(matches);
 
-        } catch (RuntimeException e) {
-
+        } catch (ResponseStatusException e) {
             return ResponseEntity
-                    .badRequest()
+                    .status(e.getStatusCode())
                     .body(
                             Map.of(
                                     "message",
-                                    e.getMessage()
+                                    e.getReason() != null
+                                            ? e.getReason()
+                                            : "Request failed"
                             )
                     );
         }
@@ -220,7 +245,6 @@ public class DonorController {
             @RequestParam(defaultValue = "10")
             double radius
     ) {
-
         return ResponseEntity.ok(
                 donorService.findNearbyDonors(
                         latitude,

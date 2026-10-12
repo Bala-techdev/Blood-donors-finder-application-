@@ -5,10 +5,12 @@ import com.BloodDonorFinderApp.demo.entity.BloodRequest;
 import com.BloodDonorFinderApp.demo.entity.DonorProfile;
 import com.BloodDonorFinderApp.demo.repository.DonorProfileRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class DonorMatchingService {
@@ -28,6 +30,11 @@ public class DonorMatchingService {
     private final MlPredictionService
             mlPredictionService;
 
+    @Value("${app.matching.rule-weight:0.85}")
+    private double ruleWeight = 0.85;
+
+    @Value("${app.matching.response-weight:0.15}")
+    private double responseWeight = 0.15;
 
     // =========================================================
     // CONSTRUCTOR
@@ -68,6 +75,9 @@ public class DonorMatchingService {
     public List<DonorMatchResult> findBestDonors(
             BloodRequest request
     ) {
+        if (request == null || request.getBloodGroup() == null) {
+            return List.of();
+        }
 
         List<DonorProfile> donors =
                 donorProfileRepository.findAll();
@@ -121,6 +131,9 @@ public class DonorMatchingService {
                             request,
                             donor
                     );
+
+            boolean hasDistance = Double.isFinite(distance)
+                    && distance < 999.0;
 
 
             // -----------------------------------------------
@@ -223,9 +236,9 @@ public class DonorMatchingService {
             // 10. CALL FASTAPI ML SERVICE
             // =================================================
 
-            double responseProbability =
+            MlPredictionService.PredictionResult prediction =
                     mlPredictionService
-                            .predictResponseProbability(
+                            .predictResponse(
 
                                     bloodCompatible,
 
@@ -274,10 +287,15 @@ public class DonorMatchingService {
              * 15%
              */
 
+            double responseProbability =
+                    prediction.probabilityPercentage();
+
             double finalScore =
-                    (ruleScore * 0.85)
-                            +
-                            (responseProbability * 0.15);
+                    (ruleScore * ruleWeight)
+                            + (responseProbability * responseWeight);
+
+            double urgencyBoost = urgencyBoost(request);
+            finalScore += urgencyBoost;
 
 
             // Keep score between 0 and 100
@@ -317,8 +335,30 @@ public class DonorMatchingService {
                             daysSinceLastDonation,
 
                             breakdown,
-
-                            responseProbability
+                            responseProbability,
+                            buildExplanation(
+                                    request,
+                                    donor,
+                                    distance,
+                                    hasDistance,
+                                    reliability,
+                                    ruleScore,
+                                    urgencyBoost,
+                                    prediction
+                            ),
+                            ruleScore,
+                            urgencyBoost,
+                            prediction.modelAvailable(),
+                            prediction.modelVersion(),
+                            prediction.status(),
+                            buildFacts(
+                                    request,
+                                    donor,
+                                    distance,
+                                    hasDistance,
+                                    reliability
+                            ),
+                            buildPredictionReasons(prediction, responseProbability)
                     )
             );
         }
@@ -338,12 +378,24 @@ public class DonorMatchingService {
         return matches;
     }
 
+    public long countEligibleAvailableDonors(BloodRequest request) {
+        if (request == null || request.getBloodGroup() == null) {
+            return 0;
+        }
+        return donorProfileRepository.findAll().stream()
+                .filter(DonorProfile::isAvailable)
+                .filter(donor -> isCompatible(
+                        request.getBloodGroup(), donor.getBloodGroup()))
+                .filter(donationEligibilityService::isEligible)
+                .count();
+    }
+
 
     // =========================================================
     // BLOOD COMPATIBILITY
     // =========================================================
 
-    private boolean isCompatible(
+    public static boolean isCompatible(
             String recipientGroup,
             String donorGroup
     ) {
@@ -528,7 +580,9 @@ public class DonorMatchingService {
         // DISTANCE - MAX 15
         // =====================================================
 
-        if (distance <= 5) {
+        if (!Double.isFinite(distance) || distance >= 999.0) {
+            distanceScore = 0;
+        } else if (distance <= 5) {
 
             distanceScore = 15;
 
@@ -598,6 +652,112 @@ public class DonorMatchingService {
         );
     }
 
+    private String buildExplanation(
+            BloodRequest request,
+            DonorProfile donor,
+            double distance,
+            boolean hasDistance,
+            DonorReliabilityResult reliability,
+            double ruleScore,
+            double urgencyBoost,
+            MlPredictionService.PredictionResult prediction
+    ) {
+        String urgency = request.getUrgency() == null
+                ? "normal"
+                : request.getUrgency().toLowerCase(Locale.ROOT);
+
+        String distanceReason = hasDistance
+                ? String.format(
+                        Locale.ROOT,
+                        "%.1f km from the request location",
+                        distance
+                )
+                : "distance unavailable because coordinates are missing";
+
+        String verificationReason = donor.isVerified()
+                ? "profile verified"
+                : "profile not verified";
+
+        String historyReason = reliability.getTotalRecommendations() > 0
+                ? String.format(
+                        Locale.ROOT,
+                        "response history: %.0f%% acceptance",
+                        reliability.getAcceptanceRate()
+                )
+                : "no prior response history";
+
+        return "Compatible blood group; available and eligible donor. "
+                + "Rule-based score "
+                + format(ruleScore)
+                + "/100; "
+                + urgency + " request priority, " + distanceReason + ", "
+                + verificationReason + ", " + historyReason
+                + ". Response probability is "
+                + (prediction.modelAvailable() ? "a model estimate" : "unavailable; neutral fallback used")
+                + " and contributes "
+                + format(prediction.probabilityPercentage() * responseWeight)
+                + " points; urgency contributes "
+                + format(urgencyBoost)
+                + " points. Matching is not medical clearance.";
+    }
+
+    private List<String> buildFacts(
+            BloodRequest request,
+            DonorProfile donor,
+            double distance,
+            boolean hasDistance,
+            DonorReliabilityResult reliability
+    ) {
+        List<String> facts = new ArrayList<>();
+        facts.add("Blood group is compatible.");
+        facts.add(donor.isAvailable()
+                ? "Donor is currently marked available."
+                : "Donor availability is not confirmed.");
+        facts.add("Donor passed the configured eligibility checks.");
+        facts.add(hasDistance
+                ? String.format(Locale.ROOT, "Measured distance is %.1f km.", distance)
+                : "Distance was not measured because coordinates are missing.");
+        facts.add(reliability.getTotalRecommendations() > 0
+                ? String.format(Locale.ROOT, "Recorded history includes %d recommendation(s), %.0f%% acceptance.",
+                reliability.getTotalRecommendations(), reliability.getAcceptanceRate())
+                : "No prior response history is available.");
+        facts.add(donor.isVerified()
+                ? "Profile is marked verified."
+                : "Profile is not marked verified.");
+        return facts;
+    }
+
+    private List<String> buildPredictionReasons(
+            MlPredictionService.PredictionResult prediction,
+            double probability
+    ) {
+        if (!prediction.modelAvailable()) {
+            return List.of("No ML prediction was available; a neutral fallback was used.");
+        }
+        return List.of(
+                String.format(Locale.ROOT,
+                        "Model estimate: %.1f%% likelihood of a response.", probability),
+                "This is a predictive estimate, not a causal explanation or medical assessment."
+        );
+    }
+
+    private String format(double value) {
+        return String.format(Locale.ROOT, "%.1f", value);
+    }
+
+    private double urgencyBoost(BloodRequest request) {
+        if (request.getUrgency() == null) {
+            return 0;
+        }
+
+        if ("EMERGENCY".equalsIgnoreCase(request.getUrgency())) {
+            return 5;
+        }
+        if ("URGENT".equalsIgnoreCase(request.getUrgency())) {
+            return 3;
+        }
+        return 0;
+    }
 
     // =========================================================
     // HAVERSINE DISTANCE
@@ -892,6 +1052,16 @@ public class DonorMatchingService {
 
         private double responseProbability;
 
+        private String explanation;
+
+        private double ruleBasedScore;
+        private double urgencyBoost;
+        private boolean responsePredictionAvailable;
+        private String responseModelVersion;
+        private String responsePredictionStatus;
+        private List<String> factualReasons;
+        private List<String> predictionReasons;
+
 
         public DonorMatchResult() {
         }
@@ -911,7 +1081,16 @@ public class DonorMatchingService {
 
                 MatchScoreBreakdown scoreBreakdown,
 
-                double responseProbability
+                double responseProbability,
+
+                String explanation,
+                double ruleBasedScore,
+                double urgencyBoost,
+                boolean responsePredictionAvailable,
+                String responseModelVersion,
+                String responsePredictionStatus,
+                List<String> factualReasons,
+                List<String> predictionReasons
         ) {
 
             this.donor = donor;
@@ -930,6 +1109,15 @@ public class DonorMatchingService {
 
             this.responseProbability =
                     responseProbability;
+
+            this.explanation = explanation;
+            this.ruleBasedScore = ruleBasedScore;
+            this.urgencyBoost = urgencyBoost;
+            this.responsePredictionAvailable = responsePredictionAvailable;
+            this.responseModelVersion = responseModelVersion;
+            this.responsePredictionStatus = responsePredictionStatus;
+            this.factualReasons = factualReasons;
+            this.predictionReasons = predictionReasons;
         }
 
 
@@ -1058,13 +1246,47 @@ public class DonorMatchingService {
 
 
         public void setResponseProbability(
-
                 double responseProbability
-
         ) {
 
             this.responseProbability =
                     responseProbability;
+        }
+
+        public String getExplanation() {
+            return explanation;
+        }
+
+        public void setExplanation(String explanation) {
+            this.explanation = explanation;
+        }
+
+        public double getRuleBasedScore() {
+            return ruleBasedScore;
+        }
+
+        public double getUrgencyBoost() {
+            return urgencyBoost;
+        }
+
+        public boolean isResponsePredictionAvailable() {
+            return responsePredictionAvailable;
+        }
+
+        public String getResponseModelVersion() {
+            return responseModelVersion;
+        }
+
+        public String getResponsePredictionStatus() {
+            return responsePredictionStatus;
+        }
+
+        public List<String> getFactualReasons() {
+            return factualReasons;
+        }
+
+        public List<String> getPredictionReasons() {
+            return predictionReasons;
         }
     }
 }

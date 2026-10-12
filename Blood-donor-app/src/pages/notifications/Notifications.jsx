@@ -172,13 +172,18 @@ function Notifications() {
                 // GET CURRENT USER'S NOTIFICATIONS
                 // ==========================================
 
-                const response =
-                    await api.get(
-                        "/notifications/me"
-                    );
+                const response = await api.get(
+                    "/notifications/me/page",
+                    {
+                        params: {
+                            page: 0,
+                            size: 25
+                        }
+                    }
+                );
 
                 const backendNotifications =
-                    response.data || [];
+                    response.data?.content || [];
 
                 // ==========================================
                 // CONVERT BACKEND DATA TO UI FORMAT

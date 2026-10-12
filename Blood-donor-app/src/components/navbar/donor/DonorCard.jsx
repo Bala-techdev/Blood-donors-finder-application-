@@ -109,6 +109,12 @@ function DonorCard({
 
             )}
 
+            {smartMatch && donor.explanation && (
+                <p className="match-explanation">
+                    {donor.explanation}
+                </p>
+            )}
+
 
             {/* =========================
                 AI RESPONSE PROBABILITY
@@ -122,7 +128,7 @@ function DonorCard({
                     <div className="ai-response-header">
 
                         <span>
-                            🤖 AI Response Probability
+                            🤖 Predicted response probability
                         </span>
 
                         <strong>
@@ -159,11 +165,44 @@ function DonorCard({
 
 
                     <small>
-                        Estimated likelihood of donor response
+                        {donor.responsePredictionAvailable
+                            ? "Model estimate, not a medical assessment"
+                            : "ML unavailable; neutral fallback used"}
                     </small>
 
                 </div>
 
+            )}
+
+            {smartMatch && (
+                <div className="match-explanation-details">
+                    {donor.factualReasons?.length > 0 && (
+                        <div>
+                            <strong>Measured matching facts</strong>
+                            <ul>
+                                {donor.factualReasons.map((reason) => (
+                                    <li key={reason}>{reason}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {donor.predictionReasons?.length > 0 && (
+                        <div>
+                            <strong>Prediction context</strong>
+                            <ul>
+                                {donor.predictionReasons.map((reason) => (
+                                    <li key={reason}>{reason}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {donor.ruleBasedScore != null && (
+                        <small>
+                            Ranking uses {Number(donor.ruleBasedScore).toFixed(1)}
+                            /100 rule score plus a configured response estimate weight.
+                        </small>
+                    )}
+                </div>
             )}
 
 

@@ -5,6 +5,8 @@ import com.BloodDonorFinderApp.demo.entity.User;
 import com.BloodDonorFinderApp.demo.repository.NotificationRepository;
 import com.BloodDonorFinderApp.demo.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -42,6 +44,22 @@ public class NotificationService {
             Long requestId
     ) {
 
+        if (notificationRepository.existsByUserIdAndTypeAndRequestId(
+                userId,
+                type,
+                requestId
+        )) {
+            return notificationRepository
+                    .findFirstByUserIdAndTypeAndRequestIdOrderByCreatedAtDesc(
+                            userId,
+                            type,
+                            requestId
+                    )
+                    .orElseThrow(() -> new RuntimeException(
+                            "Duplicate notification could not be resolved"
+                    ));
+        }
+
         User user =
                 userRepository
                         .findById(userId)
@@ -63,6 +81,19 @@ public class NotificationService {
 
         return notificationRepository.save(
                 notification
+        );
+    }
+
+    public Page<Notification> getUserNotificationsByEmail(
+            String email,
+            Pageable pageable
+    ) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(
+                user.getId(),
+                pageable
         );
     }
 

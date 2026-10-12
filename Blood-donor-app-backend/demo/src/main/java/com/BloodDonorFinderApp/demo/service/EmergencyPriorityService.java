@@ -63,6 +63,7 @@ public class EmergencyPriorityService {
                     score += 10;
                     reasons.append("Urgency level requires review. ");
             }
+
         }
 
         // ==========================================
@@ -193,5 +194,24 @@ public class EmergencyPriorityService {
                 score,
                 reasons.toString().trim()
         );
+    }
+
+    public EmergencyPriorityResult calculatePriority(
+            Long requestId,
+            String email
+    ) {
+        BloodRequest request = bloodRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Blood request not found with ID: " + requestId
+                ));
+
+        if (request.getRequester() == null
+                || !request.getRequester().getEmail().equals(email)) {
+            throw new RuntimeException(
+                    "Only the request owner can view emergency priority"
+            );
+        }
+
+        return calculatePriority(requestId);
     }
 }

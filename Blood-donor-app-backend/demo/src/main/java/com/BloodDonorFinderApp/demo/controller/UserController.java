@@ -2,6 +2,7 @@ package com.BloodDonorFinderApp.demo.controller;
 
 import com.BloodDonorFinderApp.demo.entity.User;
 import com.BloodDonorFinderApp.demo.service.UserService;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,40 +19,47 @@ public class UserController {
         this.userService = userService;
     }
 
-    // Public - registration
+    // ==========================================
+    // REGISTER USER
+    // ==========================================
+
     @PostMapping
     public ResponseEntity<User> createUser(
             @RequestBody User user
     ) {
-
         User createdUser = userService.createUser(user);
 
-        return new ResponseEntity<>(
-                createdUser,
-                HttpStatus.CREATED
-        );
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(createdUser);
     }
 
-    // Get currently logged-in user's profile
+    // ==========================================
+    // GET CURRENT USER
+    // ==========================================
+
     @GetMapping("/me")
     public ResponseEntity<User> getCurrentUser(
             Authentication authentication
     ) {
-
         String email = authentication.getName();
 
         return userService.getUserByEmail(email)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseGet(() ->
+                        ResponseEntity.notFound().build()
+                );
     }
 
-    // Update currently logged-in user's profile
+    // ==========================================
+    // UPDATE CURRENT USER
+    // ==========================================
+
     @PutMapping("/me")
     public ResponseEntity<User> updateCurrentUser(
             @RequestBody User updatedUser,
             Authentication authentication
     ) {
-
         String email = authentication.getName();
 
         User updated = userService.updateUserByEmail(

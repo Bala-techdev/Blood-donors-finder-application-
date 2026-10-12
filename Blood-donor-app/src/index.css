@@ -33,6 +33,15 @@ button {
     cursor: pointer;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid rgb(227 30 36 / 35%);
+    outline-offset: 2px;
+}
+
 a {
     text-decoration: none;
 }
