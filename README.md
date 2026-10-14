@@ -13,7 +13,7 @@ Watch the complete working demo of the SmartBlood Application:
 [▶️ Watch Blood Donor Finder Demo](https://drive.google.com/file/d/12vplcjqpw1jlRYFuP2fPRAGcQs90oIA6/view?usp=drive_link)
 [▶️ Watch Blood Donor Finder Demo](https://drive.google.com/file/d/11hWJO5lZVVmBxpoqPvJAO6q7mByaIrHD/view?usp=drive_link)
 
-[▶️ Watch Blood Donor Finder Demo](https://drive.google.com/drive/folders/18meG4c-26Tfk-0fz1aDDGKFfQCWLrT1y?usp=sharing)
+[▶️ Watch Blood Donor Finder images](https://drive.google.com/drive/folders/18meG4c-26Tfk-0fz1aDDGKFfQCWLrT1y?usp=sharing)
 
 ---
 
