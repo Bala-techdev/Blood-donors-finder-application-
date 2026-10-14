@@ -10,7 +10,8 @@ A full-stack, 3-tier intelligent healthcare platform designed to connect patient
 
 Watch the complete working demo of the SmartBlood Application:
 
-[▶️ Watch Blood Donor Finder Demo](https://drive.google.com/file/d/1HbVY8CRuKb9d5p5r7Z29q8iOtpKZuev_/view?usp=drive_link)
+[▶️ Watch Blood Donor Finder Demo](https://drive.google.com/file/d/12vplcjqpw1jlRYFuP2fPRAGcQs90oIA6/view?usp=drive_link)
+[▶️ Watch Blood Donor Finder Demo](https://drive.google.com/file/d/11hWJO5lZVVmBxpoqPvJAO6q7mByaIrHD/view?usp=drive_link)
 
 ---
 
