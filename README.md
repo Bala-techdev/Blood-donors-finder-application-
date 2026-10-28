@@ -6,6 +6,8 @@ A full-stack, 3-tier intelligent healthcare platform designed to connect patient
 
 ---
 
+https://drive.google.com/file/d/1etFdjByajSXdenzMpUKvkh_bagkFN7-_/view?usp=drivesdk
+
 ## 🎥 Project Demo
 
 Watch the complete working demo of the SmartBlood Application:
