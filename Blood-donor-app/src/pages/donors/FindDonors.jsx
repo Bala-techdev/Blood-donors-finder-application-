@@ -61,7 +61,7 @@ function FindDonors() {
                 params.location = overrideLocation;
             }
 
-            const response = await api.get("/donors/search", { params });
+            const response = await api.get("/api/donors/search", { params });
             setDonors(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error(err);
@@ -151,7 +151,7 @@ function FindDonors() {
             setLoading(true);
             setSmartMatching(false);
 
-            const response = await api.get("/donors/nearby", {
+            const response = await api.get("/api/donors/nearby", {
                 params: {
                     latitude: latitude,
                     longitude: longitude,
@@ -211,7 +211,7 @@ function FindDonors() {
                 longitude: activeLng
             };
 
-            const response = await api.post("/donors/match", requestData);
+            const response = await api.post("/api/donors/match", requestData);
 
             const recommendedDonors = (response.data || []).map((item) => ({
                 ...item.donor,

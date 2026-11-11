@@ -295,43 +295,45 @@ function Notifications() {
                 HEADER
             ========================================== */}
             <header className="notifications-header">
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                        gap: "10px"
-                    }}
-                >
-                    <Link to="/dashboard" className="notifications-back">
-                        ← Dashboard
-                    </Link>
-
-                    <button
-                        type="button"
-                        onClick={loadNotifications}
+                <div className="notifications-header-inner">
+                    <div
                         style={{
-                            background: "#ffffff",
-                            border: "1px solid #cbd5e1",
-                            padding: "7px 14px",
-                            borderRadius: "8px",
-                            fontSize: "13px",
-                            fontWeight: "600",
-                            cursor: "pointer",
-                            color: "#334155"
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: "10px"
                         }}
                     >
-                        🔄 Refresh
-                    </button>
-                </div>
+                        <Link to="/dashboard" className="notifications-back">
+                            ← Dashboard
+                        </Link>
 
-                <div className="notifications-title">
-                    <span>REAL-TIME ALERTS & AI OUTREACH</span>
-                    <h1>Notifications Center</h1>
-                    <p>
-                        Stay updated on AI donor recommendations, emergency escalations, and donor responses.
-                    </p>
+                        <button
+                            type="button"
+                            onClick={loadNotifications}
+                            style={{
+                                background: "#ffffff",
+                                border: "1px solid #cbd5e1",
+                                padding: "7px 14px",
+                                borderRadius: "8px",
+                                fontSize: "13px",
+                                fontWeight: "600",
+                                cursor: "pointer",
+                                color: "#334155"
+                            }}
+                        >
+                            🔄 Refresh
+                        </button>
+                    </div>
+
+                    <div className="notifications-title">
+                        <span>REAL-TIME ALERTS & AI OUTREACH</span>
+                        <h1>Notifications Center</h1>
+                        <p>
+                            Stay updated on AI donor recommendations, emergency escalations, and donor responses.
+                        </p>
+                    </div>
                 </div>
             </header>
 

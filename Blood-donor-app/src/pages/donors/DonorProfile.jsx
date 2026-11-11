@@ -159,10 +159,12 @@ function DonorProfile() {
         <div className="donor-profile-page">
             {/* HEADER */}
             <header className="profile-header">
-                <Link to="/donors" className="profile-back">
-                    ← Back to Donors
-                </Link>
-                <span>VERIFIED DONOR PROFILE</span>
+                <div className="donor-profile-header-inner">
+                    <Link to="/donors" className="profile-back">
+                        ← Back to Donors
+                    </Link>
+                    <span>VERIFIED DONOR PROFILE</span>
+                </div>
             </header>
 
             <main className="profile-main">

@@ -1,0 +1,108 @@
+.donor-recommendations-page {
+    min-height: 100vh;
+    background: #f8fafc;
+}
+
+.donor-recommendations-header {
+    padding: 22px 35px;
+    background: #ffffff;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.recommendations-back {
+    color: #6b7280;
+    font-size: 13px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.recommendations-back:hover {
+    color: #dc2626;
+}
+
+.recommendations-title {
+    max-width: 800px;
+    margin: 20px auto 5px;
+    text-align: center;
+}
+
+.recommendations-title span {
+    color: #dc2626;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.recommendations-title h1 {
+    margin: 6px 0;
+    color: #0f172a;
+    font-size: 32px;
+}
+
+.recommendations-title p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.recommendations-error {
+    max-width: 900px;
+    margin: 20px auto 0;
+    padding: 12px 18px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #b91c1c;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.donor-recommendations-main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(1.25rem, 3vw, 2.5rem);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.donor-recommendations-state,
+.recommendations-empty {
+    text-align: center;
+    padding: 60px 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.recommendations-empty div {
+    font-size: 40px;
+    margin-bottom: 12px;
+}
+
+.recommendations-empty h2 {
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
+.recommendations-empty p {
+    color: #64748b;
+    font-size: 14px;
+    margin: 0;
+}
+
+.recommendations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.recommendations-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    align-items: stretch;
+}
+
+.recommendation-card {
+    min-width: 0;
+    height: 100%;
+}

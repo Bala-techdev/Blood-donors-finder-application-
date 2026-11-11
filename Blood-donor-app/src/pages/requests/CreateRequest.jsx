@@ -134,7 +134,7 @@ function CreateRequest() {
                 description: formData.description
             };
 
-            const response = await api.post("/requests", requestData);
+            const response = await api.post("/api/requests", requestData);
             const createdRequestId = response?.data?.id;
 
             setSuccess(
@@ -172,16 +172,18 @@ function CreateRequest() {
         <div className="create-request-page">
             {/* ================= HEADER ================= */}
             <header className="request-page-header">
-                <Link to="/dashboard" className="request-back">
-                    ← Dashboard
-                </Link>
+                <div className="request-header-inner">
+                    <Link to="/dashboard" className="request-back">
+                        ← Dashboard
+                    </Link>
 
-                <div className="request-header-title">
-                    <span>BLOOD DONATION</span>
-                    <h1>Create Blood Request</h1>
-                    <p>
-                        Submit your requirement to trigger SmartBlood AI donor matching and priority assessment.
-                    </p>
+                    <div className="request-header-title">
+                        <span>BLOOD DONATION</span>
+                        <h1>Create Blood Request</h1>
+                        <p>
+                            Submit your requirement to trigger SmartBlood AI donor matching and priority assessment.
+                        </p>
+                    </div>
                 </div>
             </header>
 

@@ -399,16 +399,18 @@ function Profile() {
         <div className="profile-page">
             {/* HEADER */}
             <header className="profile-page-header">
-                <Link to="/dashboard" className="profile-dashboard-link">
-                    ← Dashboard
-                </Link>
+                <div className="profile-header-inner">
+                    <Link to="/dashboard" className="profile-dashboard-link">
+                        ← Dashboard
+                    </Link>
 
-                <div className="profile-header-title">
-                    <span>ACCOUNT & DONOR ID</span>
-                    <h1>My Profile</h1>
-                    <p>
-                        Manage your personal details, donor availability, and medical eligibility status.
-                    </p>
+                    <div className="profile-header-title">
+                        <span>ACCOUNT & DONOR ID</span>
+                        <h1>My Profile</h1>
+                        <p>
+                            Manage your personal details, donor availability, and medical eligibility status.
+                        </p>
+                    </div>
                 </div>
             </header>
 

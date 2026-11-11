@@ -56,7 +56,7 @@ function Register() {
         try {
             setLoading(true);
 
-            await api.post("/users", formData);
+            await api.post("/api/users", formData);
 
             setSuccess("Registration successful! Redirecting to login...");
 

@@ -20,7 +20,7 @@ function BloodRequests() {
         try {
             setLoading(true);
             setError("");
-            const response = await api.get("/requests/pending");
+            const response = await api.get("/api/requests/pending");
             setRequests(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error("Unable to load blood requests:", err);
@@ -83,7 +83,7 @@ function BloodRequests() {
 
         try {
             setRespondingId(requestId);
-            await api.post(`/request-responses/request/${requestId}/respond`);
+            await api.post(`/api/request-responses/request/${requestId}/respond`);
             setActionMessage(
                 `✅ Thank you! Your willingness to donate for Request #${requestId} has been recorded and sent to the requester.`
             );

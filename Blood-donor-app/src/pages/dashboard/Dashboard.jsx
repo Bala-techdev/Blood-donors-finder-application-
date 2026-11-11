@@ -53,10 +53,10 @@ function Dashboard() {
                     shortageResult,
                     monitoringResult
                 ] = await Promise.allSettled([
-                    api.get("/dashboard/me"),
-                    api.get("/analytics/demand"),
-                    api.get("/analytics/shortage-risk"),
-                    api.get("/ml-monitoring")
+                    api.get("/api/dashboard/me"),
+                    api.get("/api/analytics/demand"),
+                    api.get("/api/analytics/shortage-risk"),
+                    api.get("/api/ml-monitoring")
                 ]);
 
                 if (dashboardResult.status === "fulfilled") {

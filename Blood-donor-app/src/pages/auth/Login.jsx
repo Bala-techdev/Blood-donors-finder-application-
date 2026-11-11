@@ -37,7 +37,7 @@ function Login() {
         try {
             setLoading(true);
 
-            const response = await api.post("/auth/login", formData);
+            const response = await api.post("/api/auth/login", formData);
             const loginData = response.data;
 
             localStorage.setItem("bloodDonorToken", loginData.token);

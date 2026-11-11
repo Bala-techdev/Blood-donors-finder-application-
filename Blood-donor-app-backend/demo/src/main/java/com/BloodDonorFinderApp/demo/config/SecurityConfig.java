@@ -87,11 +87,28 @@ public class SecurityConfig {
                                 "/api/users"
                         ).permitAll()
 
+                        // Swagger / OpenAPI documentation endpoints are public
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+
+                        // Preflight OPTIONS requests must be allowed
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // Everything else requires JWT
                         .anyRequest().authenticated()
                 )
 
-                // Validate JWT on protected requests
+                // Validate JWT on protected requests via Spring's
+                // built-in BearerTokenAuthenticationFilter which
+                // extracts the "Authorization: Bearer <token>" header,
+                // decodes/validates through the JwtDecoder bean, and
+                // sets the SecurityContext automatically.
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwt -> {})
                 );
@@ -106,8 +123,12 @@ public class SecurityConfig {
                 new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173")
+                List.of(
+                        "http://localhost:5173",
+                        "http://localhost:3000"
+                )
         );
+        configuration.setAllowedOriginPatterns(List.of("*"));
 
         configuration.setAllowedMethods(
                 List.of(
@@ -120,10 +141,28 @@ public class SecurityConfig {
         );
 
         configuration.setAllowedHeaders(
-                List.of("*")
+                List.of(
+                        "Authorization",
+                        "Content-Type",
+                        "Accept",
+                        "Origin",
+                        "X-Requested-With",
+                        "Access-Control-Request-Method",
+                        "Access-Control-Request-Headers"
+                )
+        );
+
+        configuration.setExposedHeaders(
+                List.of(
+                        "Authorization",
+                        "Content-Disposition"
+                )
         );
 
         configuration.setAllowCredentials(true);
+
+        // Allow preflight cache for 1 hour
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();

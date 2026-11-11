@@ -17,15 +17,15 @@ function EmergencyDashboard() {
             setLoading(true);
             setError("");
 
-            const response = await api.get("/requests");
+            const response = await api.get("/api/requests");
             const allRequests = response.data || [];
 
             const emergencyData = await Promise.all(
                 allRequests.map(async (request) => {
                     try {
                         const [statusRes, coordinatorRes] = await Promise.allSettled([
-                            api.get(`/emergency/${request.id}/status`),
-                            api.get(`/emergency/${request.id}/coordinator`)
+                            api.get(`/api/emergency/${request.id}/status`),
+                            api.get(`/api/emergency/${request.id}/coordinator`)
                         ]);
 
                         if (statusRes.status !== "fulfilled") {
@@ -120,24 +120,26 @@ function EmergencyDashboard() {
                 HEADER
             ====================================== */}
             <header className="emergency-dashboard-header">
-                <Link to="/dashboard" className="emergency-back">
-                    ← Dashboard
-                </Link>
+                <div className="emergency-dashboard-header-inner">
+                    <Link to="/dashboard" className="emergency-back">
+                        ← Dashboard
+                    </Link>
 
-                <div className="emergency-title">
-                    <span>🚨 SMARTBLOOD EMERGENCY SYSTEM</span>
-                    <h1>Emergency Triage & Escalation Dashboard</h1>
-                    <p>
-                        Real-time AI priority scoring, automated escalation tracking, and coordinator recommendations.
-                    </p>
+                    <div className="emergency-title">
+                        <span>🚨 SMARTBLOOD EMERGENCY SYSTEM</span>
+                        <h1>Emergency Triage & Escalation Dashboard</h1>
+                        <p>
+                            Real-time AI priority scoring, automated escalation tracking, and coordinator recommendations.
+                        </p>
+                    </div>
+
+                    <button
+                        className="refresh-emergency-button"
+                        onClick={loadEmergencyRequests}
+                    >
+                        🔄 Refresh
+                    </button>
                 </div>
-
-                <button
-                    className="refresh-emergency-button"
-                    onClick={loadEmergencyRequests}
-                >
-                    🔄 Refresh
-                </button>
             </header>
 
             {error && <div className="emergency-error">{error}</div>}

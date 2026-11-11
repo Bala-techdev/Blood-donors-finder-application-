@@ -53,7 +53,6 @@ function RequestDetails() {
 
     // EXPLANATION EXPANSION
     const [expandedDonorId, setExpandedDonorId] = useState(null);
-    const [reliabilityLoading, setReliabilityLoading] = useState(false);
 
     // ==========================================
     // LOAD DONATION PROGRESS
@@ -400,11 +399,11 @@ function RequestDetails() {
         );
     }
 
-    if (error && !bloodRequest) {
+    if (!bloodRequest) {
         return (
             <div className="request-details-error-page">
-                <h2>Something went wrong</h2>
-                <p>{error}</p>
+                <h2>Blood Request Not Found</h2>
+                <p>{error || "The requested blood request could not be found or has been removed."}</p>
                 <Link to="/requests">← Back to Requests</Link>
             </div>
         );
@@ -419,20 +418,23 @@ function RequestDetails() {
                 HEADER
             ====================================== */}
             <header className="request-details-header">
-                <Link to="/requests" className="back-to-requests">
-                    ← Back to Requests
-                </Link>
+                <div className="request-details-header-inner">
+                    <Link to="/requests" className="back-to-requests">
+                        ← Back to Requests
+                    </Link>
 
-                <div className="request-details-title">
-                    <span className="details-label">BLOOD REQUEST</span>
-                    <h1>Blood Requirement Details</h1>
-                    <p>
-                        View blood request details and intelligent donor recommendations.
-                    </p>
+                    <div className="request-details-title">
+                        <span className="details-label">BLOOD REQUEST</span>
+                        <h1>Blood Requirement Details</h1>
+                        <p>
+                            View blood request details and intelligent donor recommendations.
+                        </p>
+                    </div>
                 </div>
             </header>
 
-            {error && <div className="details-error">{error}</div>}
+            <main className="request-details-main">
+                {error && <div className="details-error">{error}</div>}
 
             {notificationMessage && (
                 <div className="notification-success">
@@ -1273,6 +1275,7 @@ function RequestDetails() {
                     )}
                 </section>
             )}
+            </main>
         </div>
     );
 }

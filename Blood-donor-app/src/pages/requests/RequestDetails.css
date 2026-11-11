@@ -15,8 +15,21 @@
 
 .request-details-header {
     background: white;
-    padding: 30px 8%;
     border-bottom: 1px solid #e5e7eb;
+    width: 100%;
+}
+
+.request-details-header-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: clamp(1.25rem, 3vw, 2rem) clamp(1rem, 3vw, 2.5rem);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 
@@ -113,39 +126,30 @@
 ========================================== */
 
 .details-error {
-    width: 84%;
-
-    margin: 25px auto;
-
-    padding: 15px;
-
+    max-width: 1280px;
+    width: 100%;
+    margin: 20px auto;
+    padding: 15px 20px;
     background: #fee2e2;
-
     color: #b91c1c;
-
     border-radius: 10px;
-
     border: 1px solid #fecaca;
+    box-sizing: border-box;
 }
-
 
 /* ==========================================
    REQUEST INFORMATION CARD
 ========================================== */
 
 .request-information-card {
-    width: 84%;
-
-    margin: 35px auto;
-
+    max-width: 1280px;
+    width: 100%;
+    margin: 24px auto;
     background: white;
-
     border-radius: 18px;
-
-    padding: 30px;
-
-    box-shadow:
-        0 8px 25px rgba(0, 0, 0, 0.06);
+    padding: clamp(1.25rem, 3vw, 2rem);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+    box-sizing: border-box;
 }
 
 
@@ -295,9 +299,10 @@
 ========================================== */
 
 .ai-matching-section {
-    width: 84%;
-
-    margin: 40px auto;
+    max-width: 1280px;
+    width: 100%;
+    margin: 24px auto;
+    box-sizing: border-box;
 }
 
 
@@ -2227,4 +2232,33 @@
 
 .outreach-optimization-panel small {
     color: #475569;
+}
+.request-details-page {
+    min-width: 0;
+}
+
+.request-details-grid,
+.matching-donors-list,
+.accepted-donors-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 1rem;
+}
+
+.request-card-header,
+.priority-header,
+.ai-section-header,
+.donation-progress-header,
+.accepted-donors-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+@media (max-width: 767px) {
+    .request-details-grid {
+        grid-template-columns: 1fr;
+    }
 }

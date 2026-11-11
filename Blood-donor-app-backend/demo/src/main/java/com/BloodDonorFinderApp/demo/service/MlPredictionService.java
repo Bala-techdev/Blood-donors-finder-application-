@@ -117,17 +117,26 @@ public class MlPredictionService {
                     restTemplate.postForObject(mlUrl, request, Map.class);
 
             if (response == null) {
-                return fallback("empty response");
+                return heuristicFallback("empty response",
+                        bloodCompatible, distance, available, eligible,
+                        verified, totalDonations, responseRate,
+                        acceptanceRate, urgencyScore);
             }
 
             Object probability = response.get("response_probability");
             if (!(probability instanceof Number)) {
-                return fallback("missing response probability");
+                return heuristicFallback("missing response probability",
+                        bloodCompatible, distance, available, eligible,
+                        verified, totalDonations, responseRate,
+                        acceptanceRate, urgencyScore);
             }
 
             double value = ((Number) probability).doubleValue();
             if (!Double.isFinite(value) || value < 0.0 || value > 1.0) {
-                return fallback("invalid response probability");
+                return heuristicFallback("invalid response probability",
+                        bloodCompatible, distance, available, eligible,
+                        verified, totalDonations, responseRate,
+                        acceptanceRate, urgencyScore);
             }
             String modelVersion = response.get("model_version") instanceof String version
                     ? version
@@ -142,18 +151,113 @@ public class MlPredictionService {
                             : "MODEL_PREDICTED"
             );
         } catch (RestClientException exception) {
-            log.warn("SmartBlood ML service unavailable; using neutral fallback", exception);
-            return fallback("service unavailable");
+            log.warn("SmartBlood ML service unavailable (RestClient error); " +
+                     "using heuristic fallback", exception);
+            return heuristicFallback("service unavailable (RestClient)",
+                    bloodCompatible, distance, available, eligible,
+                    verified, totalDonations, responseRate,
+                    acceptanceRate, urgencyScore);
+        } catch (Exception exception) {
+            // Catch-all for unexpected errors (connection refused wrapped in
+            // non-RestClient exceptions, JSON parse errors, etc.)
+            log.warn("SmartBlood ML service call failed unexpectedly; " +
+                     "using heuristic fallback", exception);
+            return heuristicFallback("unexpected error: " + exception.getMessage(),
+                    bloodCompatible, distance, available, eligible,
+                    verified, totalDonations, responseRate,
+                    acceptanceRate, urgencyScore);
         } finally {
             totalLatencyNanos.addAndGet(System.nanoTime() - started);
         }
     }
 
-    private PredictionResult fallback(String reason) {
+    /**
+     * Computes a realistic heuristic score when the FastAPI ML service is
+     * unreachable. Weights are chosen to approximate the random-forest model's
+     * feature importances from training analysis.
+     *
+     * <p>Factors considered (in order of weight):
+     * <ul>
+     *   <li>Blood compatibility — hard gate (incompatible → 5%)</li>
+     *   <li>Distance — closer is much better</li>
+     *   <li>Availability &amp; eligibility — binary gates</li>
+     *   <li>Historical acceptance rate — strong signal</li>
+     *   <li>Verification status — mild trust boost</li>
+     *   <li>Donation history — experienced donors respond more</li>
+     *   <li>Urgency — high urgency slightly increases response</li>
+     * </ul>
+     */
+    private PredictionResult heuristicFallback(
+            String reason,
+            int bloodCompatible,
+            double distance,
+            int available,
+            int eligible,
+            int verified,
+            int totalDonations,
+            double responseRate,
+            double acceptanceRate,
+            double urgencyScore
+    ) {
         failedPredictions.incrementAndGet();
         fallbackPredictions.incrementAndGet();
-        log.warn("SmartBlood ML prediction unavailable: {}; using neutral fallback", reason);
-        return new PredictionResult(50.0, false, "unavailable", "FALLBACK");
+        log.warn("SmartBlood ML prediction unavailable: {}; computing heuristic fallback", reason);
+
+        // ── Hard gate: incompatible blood → very low probability ──
+        if (bloodCompatible == 0) {
+            return new PredictionResult(5.0, false, "heuristic-v1", "HEURISTIC_FALLBACK");
+        }
+
+        // ── Unavailable or ineligible → low probability ──
+        if (available == 0) {
+            return new PredictionResult(8.0, false, "heuristic-v1", "HEURISTIC_FALLBACK");
+        }
+        if (eligible == 0) {
+            return new PredictionResult(10.0, false, "heuristic-v1", "HEURISTIC_FALLBACK");
+        }
+
+        // ── Base score: start at 55% for a compatible, available, eligible donor ──
+        double score = 55.0;
+
+        // ── Distance factor (max ±20 points) ──
+        // Donors within 5 km get full bonus; penalty ramps up past 20 km
+        if (distance <= 5.0) {
+            score += 20.0;
+        } else if (distance <= 15.0) {
+            score += 20.0 - (distance - 5.0) * 1.5;   // linear decay
+        } else if (distance <= 50.0) {
+            score += 5.0 - (distance - 15.0) * 0.4;    // slower decay
+        } else {
+            score -= Math.min(15.0, (distance - 50.0) * 0.2);
+        }
+
+        // ── Historical acceptance rate (max +15 points) ──
+        // acceptanceRate comes in as 0-100 percentage
+        score += (acceptanceRate / 100.0) * 15.0;
+
+        // ── Historical response rate (max +5 points) ──
+        score += (responseRate / 100.0) * 5.0;
+
+        // ── Verified donor bonus (+5 points) ──
+        if (verified == 1) {
+            score += 5.0;
+        }
+
+        // ── Donation experience (max +5 points) ──
+        // Diminishing returns: 1 donation = +1.7, 3+ donations = +5
+        score += Math.min(5.0, totalDonations * 1.7);
+
+        // ── Urgency bump (max +5 points) ──
+        // urgencyScore is typically 0.0 – 1.0
+        score += urgencyScore * 5.0;
+
+        // ── Clamp to [1, 99] — never show 0% or 100% for a heuristic ──
+        score = Math.max(1.0, Math.min(99.0, score));
+
+        // Round to one decimal
+        score = Math.round(score * 10.0) / 10.0;
+
+        return new PredictionResult(score, false, "heuristic-v1", "HEURISTIC_FALLBACK");
     }
 
     public record MlMonitoringSnapshot(
