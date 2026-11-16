@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../../services/api";
+import api, { setAccessToken } from "../../services/api";
 import "./Login.css";
 
 function Login() {
@@ -40,14 +40,15 @@ function Login() {
             const response = await api.post("/api/auth/login", formData);
             const loginData = response.data;
 
-            localStorage.setItem("bloodDonorToken", loginData.token);
+            setAccessToken(loginData.token);
 
             const user = {
                 id: loginData.userId,
                 name: loginData.name,
                 email: loginData.email,
                 phone: loginData.phone,
-                role: loginData.role
+                role: loginData.role,
+                emailVerified: loginData.emailVerified
             };
 
             localStorage.setItem("bloodDonorUser", JSON.stringify(user));

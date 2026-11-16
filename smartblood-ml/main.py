@@ -1,3 +1,5 @@
+import hashlib
+import logging
 import math
 import os
 import pickle
@@ -11,6 +13,8 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
 
+logger = logging.getLogger("smartblood_ml")
+
 
 app = FastAPI(
     title="SmartBlood ML Service",
@@ -18,14 +22,17 @@ app = FastAPI(
 )
 
 # ==========================================
-# CORS — allow all origins so both Spring Boot
-# and direct local testing can reach every endpoint
+# CORS — restrict origins to backend callers
+# ML service should only be called server-to-server
 # ==========================================
+ml_allowed_origins_env = os.getenv("ML_ALLOWED_ORIGINS", "http://localhost:8080")
+ml_allowed_origins = [origin.strip() for origin in ml_allowed_origins_env.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=ml_allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -162,11 +169,56 @@ def _load_model(path: Path, name: str) -> Any:
         return None
 
 
+_model_integrity_ok = True
+
+
+def _verify_model_integrity(model_path: Path) -> bool:
+    """Verify the SHA-256 integrity checksum of a model file against its .sha256 companion."""
+    global _model_integrity_ok
+    sha_file = model_path.parent / "model.sha256"
+    if not sha_file.exists() or not model_path.exists():
+        _model_integrity_ok = True
+        return True
+
+    try:
+        expected_sha = sha_file.read_text().strip().split()[0].lower()
+        hasher = hashlib.sha256()
+        with open(model_path, "rb") as f:
+            while chunk := f.read(65536):
+                hasher.update(chunk)
+        actual_sha = hasher.hexdigest().lower()
+
+        if actual_sha != expected_sha:
+            logger.warning(
+                "[ML_INTEGRITY_MISMATCH] Checksum mismatch for %s. Expected: %s, got: %s. Falling back to rule-based engine.",
+                model_path, expected_sha, actual_sha
+            )
+            _model_integrity_ok = False
+            return False
+
+        _model_integrity_ok = True
+        return True
+    except Exception as exc:
+        logger.warning(
+            "[ML_INTEGRITY_MISMATCH] Error verifying checksum for %s: %s. Falling back to rule-based engine.",
+            model_path, exc
+        )
+        _model_integrity_ok = False
+        return False
+
+
 def _load_response_model() -> Any:
     """Load the response model, raising 503 only if truly needed."""
-    global _response_model, _response_model_version
+    global _response_model, _response_model_version, _model_integrity_ok
     if _response_model is not None:
         return _response_model
+
+    # Verify SHA-256 checksum integrity (Item 12)
+    if not _verify_model_integrity(RESPONSE_MODEL_PATH):
+        _response_model = None
+        _response_model_version = "integrity-mismatch-fallback"
+        return None
+
     try:
         loaded = joblib.load(RESPONSE_MODEL_PATH)
     except (
@@ -205,13 +257,28 @@ def root():
         "model": "Calibrated Random Forest",
         "version": "1.2.0",
         "model_version": _response_model_version,
+        "model_integrity_ok": _model_integrity_ok,
         "endpoints": [
             "/predict",
             "/predict-reliability",
             "/predict-shortage",
             "/predict-response-time",
             "/optimize-outreach",
+            "/health",
+            "/monitoring",
         ],
+    }
+
+
+@app.get("/health")
+def health():
+    _load_response_model()
+    return {
+        "status": "UP",
+        "service": "SmartBlood ML",
+        "model_loaded": _response_model is not None,
+        "model_version": _response_model_version,
+        "model_integrity_ok": _model_integrity_ok,
     }
 
 
@@ -246,7 +313,15 @@ def response_time_status():
 
 @app.get("/monitoring")
 def monitoring(x_monitoring_token: str | None = Header(default=None)):
-    if not MONITORING_TOKEN or x_monitoring_token != MONITORING_TOKEN:
+    token = os.getenv("SMARTBLOOD_MONITORING_TOKEN")
+    # Item 13: If SMARTBLOOD_MONITORING_TOKEN is unset, return 404 to hide the endpoint
+    if not token:
+        raise HTTPException(
+            status_code=404,
+            detail="Endpoint not found",
+        )
+    # If token is configured, enforce exact header match
+    if x_monitoring_token != token:
         raise HTTPException(
             status_code=401,
             detail="Monitoring authorization is required.",

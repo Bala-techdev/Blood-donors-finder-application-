@@ -26,7 +26,8 @@ public class JwtService {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("blood-donor-finder")
                 .issuedAt(now)
-                .expiresAt(now.plusSeconds(24 * 60 * 60))
+                // Short-lived access token: 15 minutes
+                .expiresAt(now.plusSeconds(15 * 60))
                 .subject(user.getEmail())
                 .claim("userId", user.getId())
                 .claim("role", user.getRole())

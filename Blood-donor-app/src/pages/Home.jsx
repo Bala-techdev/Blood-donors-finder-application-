@@ -52,6 +52,14 @@ function Home() {
                             <div className="hero-buttons">
                                 <button
                                     type="button"
+                                    className="emergency-request-btn"
+                                    onClick={() => navigate("/requests/create?urgency=CRITICAL")}
+                                >
+                                    🚨 EMERGENCY REQUEST
+                                </button>
+
+                                <button
+                                    type="button"
                                     className="primary-button"
                                     onClick={() => navigate("/donors")}
                                 >
@@ -70,9 +78,26 @@ function Home() {
                                     }
                                 >
                                     {isLoggedIn
-                                        ? "🩸 Request Blood Urgently"
+                                        ? "🩸 Request Blood"
                                         : "Become a Donor"}
                                 </button>
+                            </div>
+
+                            {/* 24/7 Helpline Banner Card */}
+                            <div className="hero-helpline-banner">
+                                <div className="helpline-title">
+                                    <span className="helpline-pulse"></span>
+                                    <strong>24/7 CRITICAL BLOOD HELPLINE</strong>
+                                </div>
+                                <p className="helpline-subtitle">Immediate hospital dispatch & emergency coordination:</p>
+                                <div className="helpline-links">
+                                    <a href="tel:112" className="helpline-pill red">
+                                        📞 112 Emergency
+                                    </a>
+                                    <a href="tel:108" className="helpline-pill ambulance">
+                                        🚑 108 Ambulance
+                                    </a>
+                                </div>
                             </div>
 
                             <div className="hero-trust">
@@ -403,6 +428,24 @@ function Home() {
                         </div>
                     </div>
                 </section>
+
+                {/* Persistent Mobile Action Bar (Item 11: Emergency UX) */}
+                <aside className="home-mobile-bottom-bar" aria-label="Quick Emergency Actions">
+                    <button
+                        type="button"
+                        className="mobile-bar-btn emergency"
+                        onClick={() => navigate("/requests/create?urgency=CRITICAL")}
+                    >
+                        🚨 Request Blood
+                    </button>
+                    <button
+                        type="button"
+                        className="mobile-bar-btn donate"
+                        onClick={() => navigate(isLoggedIn ? "/dashboard" : "/register")}
+                    >
+                        ❤️ Donate Now
+                    </button>
+                </aside>
             </main>
         </>
     );

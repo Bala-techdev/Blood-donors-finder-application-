@@ -1,11 +1,23 @@
 package com.BloodDonorFinderApp.demo.entity;
 
+import com.BloodDonorFinderApp.demo.validation.ValidBloodGroup;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "donor_profiles")
+@Table(
+        name = "donor_profiles",
+        indexes = {
+                @Index(name = "idx_donor_blood_group", columnList = "bloodGroup"),
+                @Index(name = "idx_donor_location", columnList = "location"),
+                @Index(name = "idx_donor_available", columnList = "available"),
+                @Index(name = "idx_donor_last_donation", columnList = "lastDonationDate"),
+                @Index(name = "idx_donor_search_composite", columnList = "bloodGroup, location, available"),
+                @Index(name = "idx_donor_lat_long", columnList = "latitude, longitude")
+        }
+)
 public class DonorProfile {
 
     @Id
@@ -16,6 +28,8 @@ public class DonorProfile {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 
+    @NotBlank(message = "Blood group is required")
+    @ValidBloodGroup
     @Column(nullable = false)
     private String bloodGroup;
 
@@ -23,6 +37,7 @@ public class DonorProfile {
 
     private LocalDate dateOfBirth;
 
+    @NotBlank(message = "Location is required")
     private String location;
 
     private Double latitude;

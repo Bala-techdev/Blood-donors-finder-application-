@@ -2,10 +2,13 @@ package com.BloodDonorFinderApp.demo.controller;
 
 import com.BloodDonorFinderApp.demo.entity.BloodRequest;
 import com.BloodDonorFinderApp.demo.entity.DonorProfile;
+import com.BloodDonorFinderApp.demo.entity.User;
+import com.BloodDonorFinderApp.demo.repository.UserRepository;
 import com.BloodDonorFinderApp.demo.service.BloodRequestService;
 import com.BloodDonorFinderApp.demo.service.DonorMatchingService;
 import com.BloodDonorFinderApp.demo.service.DonorService;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,21 +20,23 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/donors")
-@CrossOrigin(origins = "http://localhost:5173")
 public class DonorController {
 
     private final DonorService donorService;
     private final DonorMatchingService donorMatchingService;
     private final BloodRequestService bloodRequestService;
+    private final UserRepository userRepository;
 
     public DonorController(
             DonorService donorService,
             DonorMatchingService donorMatchingService,
-            BloodRequestService bloodRequestService
+            BloodRequestService bloodRequestService,
+            UserRepository userRepository
     ) {
         this.donorService = donorService;
         this.donorMatchingService = donorMatchingService;
         this.bloodRequestService = bloodRequestService;
+        this.userRepository = userRepository;
     }
 
     // ==========================================
@@ -40,7 +45,7 @@ public class DonorController {
 
     @PostMapping
     public ResponseEntity<DonorProfile> createDonor(
-            @RequestBody DonorProfile donorProfile,
+            @RequestBody @Valid DonorProfile donorProfile,
             Authentication authentication
     ) {
         String email = authentication.getName();
@@ -80,7 +85,7 @@ public class DonorController {
 
     @PutMapping("/me")
     public ResponseEntity<DonorProfile> updateMyDonorProfile(
-            @RequestBody DonorProfile updatedProfile,
+            @RequestBody @Valid DonorProfile updatedProfile,
             Authentication authentication
     ) {
         String email = authentication.getName();
@@ -142,13 +147,27 @@ public class DonorController {
     // ==========================================
 
     @GetMapping("/search")
-    public ResponseEntity<List<DonorProfile>> searchDonors(
+    public ResponseEntity<?> searchDonors(
             @RequestParam(required = false)
             String bloodGroup,
 
             @RequestParam(required = false)
-            String location
+            String location,
+
+            Authentication authentication
     ) {
+        // Enforce email verification check for donor search (Item 8)
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            String email = authentication.getName();
+            User currentUser = userRepository.findByEmail(email).orElse(null);
+            if (currentUser != null && !currentUser.isEmailVerified()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                        "error", "EMAIL_NOT_VERIFIED",
+                        "message", "Please verify your email address with OTP before searching or viewing donors."
+                ));
+            }
+        }
+
         List<DonorProfile> donors;
 
         if (bloodGroup != null && location != null) {
@@ -183,7 +202,7 @@ public class DonorController {
     public ResponseEntity<
             List<DonorMatchingService.DonorMatchResult>
             > findMatchingDonors(
-            @RequestBody BloodRequest request
+            @RequestBody @Valid BloodRequest request
     ) {
         return ResponseEntity.ok(
                 donorMatchingService.findBestDonors(

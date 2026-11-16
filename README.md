@@ -2,239 +2,148 @@
 
 A full-stack, 3-tier intelligent healthcare platform designed to connect patients and hospitals with verified blood donors in real time using **Explainable AI Matching**, **Machine Learning Response Prediction**, **Automated Emergency Escalation**, and **GPS Radius Search**.
 
-> 🚀 Built using **React (Vite)**, **Java Spring Boot (Spring Security + JWT)**, **Python FastAPI (Scikit-Learn)**, and **MySQL**.
-
----
-
-## 🎥 Project Demo
-
-Watch the complete working demo of the SmartBlood Application:
-
-[▶️ Watch Blood Donor Finder Demo](https://drive.google.com/file/d/12vplcjqpw1jlRYFuP2fPRAGcQs90oIA6/view?usp=drive_link)
-[▶️ Watch Blood Donor Finder Demo](https://drive.google.com/file/d/11hWJO5lZVVmBxpoqPvJAO6q7mByaIrHD/view?usp=drive_link)
-
-[Blood Donor Finder images](https://drive.google.com/drive/folders/18meG4c-26Tfk-0fz1aDDGKFfQCWLrT1y?usp=sharing)
-
----
-
-## 📌 Project Overview
-
-Traditional blood donor platforms operate as static directories where patients and families must manually call listed phone numbers one by one during critical hospital emergencies—often encountering unavailable or medically ineligible donors.
-
-**SmartBlood** transforms passive donor searching into an active, AI-driven emergency response system where users can:
-
-- **Authenticate Securely:** Role-based registration and stateless JWT login (`USER` / `DONOR`).
-- **AI-Powered Donor Matching:** Rank compatible donors using a transparent **100-point Explainable AI score** combined with a calibrated **Random Forest ML classifier (`response-rf-calibrated-v1`)** that predicts donor response likelihood.
-- **GPS Radius Search:** Discover nearby available donors within **5 km to 50 km** of the hospital.
-- **Emergency Triage & Auto-Escalation:** Automatically score request priority (`/100`), track unit fulfillment progress, and trigger scheduled background escalations for unfulfilled critical requests.
-- **Outreach Wave Optimization:** Calculate the mathematical likelihood of at least one positive response from a suggested outreach wave to prevent donor alert fatigue.
-- **Proactive Analytics:** Monitor regional **Shortage Risk Indicators**, **Monthly Demand Forecasts**, and live **AI Model Telemetry (F1, ROC-AUC, Latency)** from a unified Command Center.
-- **One-Click Multi-Channel Coordination:** Contact accepted or recommended donors via **Direct Call**, **Pre-filled Emergency WhatsApp Alerts**, and **Google Maps Hospital Navigation**.
-
----
-
-## ✨ Key Features
-
-### 🤖 1. Intelligent Donor Matching & Explainable AI
-- **100-Point Multi-Factor Scoring:**
-  - 🩸 **Blood Compatibility:** 40 pts
-  - 📍 **GPS Location & Distance:** 15 pts
-  - 🩺 **90-Day Medical Eligibility:** 15 pts
-  - 🟢 **Current Availability:** 10 pts
-  - ✅ **Profile Verification:** 10 pts
-  - 🏆 **Past Donation Experience:** 10 pts
-- **ML Response Probability:** Integrates with the Python FastAPI microservice to predict each donor's likelihood of responding.
-- **Donor Reliability Analytics:** Tracks historical response rate, acceptance rate, and reliability tier (`/100`).
-
-### 🚨 2. Emergency Command Center & Automated Escalation
-- **Dynamic Priority Scoring (`EmergencyPriorityService`):** Evaluates urgency (`NORMAL`, `URGENT`, `EMERGENCY`), required units, and date proximity.
-- **Background Escalation Scheduler (`EmergencyEscalationScheduler`):** Automatically monitors unfulfilled high-priority requests, logs escalation events, and generates **AI Coordinator Recommendations**.
-- **Auto-Cleanup (`FulfilledRequestCleanupService`):** Automatically archives completed requests to keep emergency queues clean.
-
-### 📈 3. Demand Forecasting & Shortage Risk Analytics
-- **Shortage Risk Engine (`BloodShortageRiskService`):** Flags high-risk regional blood group shortages by comparing unresolved requests against currently eligible compatible donors.
-- **Monthly Demand Outlook (`DemandForecastService`):** Projects upcoming blood group demand based on historical request trends.
-- **Live ML Telemetry (`MlMonitoringController`):** Displays model availability, request counts, fallback rates, average inference latency (`ms`), and offline holdout metrics (`F1: 0.9912`, `ROC-AUC: 0.9653`).
-
-### 🩺 4. Donor Safety & 90-Day Cooldown Guard
-- **Medical Cooldown Enforcement (`DonationEligibilityService`):** Automatically calculates days elapsed since `lastDonationDate` and protects donors within the 90-day whole-blood recovery period.
-- **1-Click Availability Toggle:** Donors can pause or activate their availability directly from their profile.
-- **Interactive Blood Compatibility Explorer:** Instant donor and recipient compatibility reference across all 8 blood groups (`A+`, `A-`, `B+`, `B-`, `AB+`, `AB-`, `O+`, `O-`).
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technologies Used |
-| :--- | :--- |
-| **Frontend** | React.js, Vite, React Router DOM, Axios (JWT Interceptors), CSS3 |
-| **Backend** | Java, Spring Boot, Spring Security, Spring Data JPA (Hibernate), Maven |
-| **Security** | Stateless JWT Authentication (`JwtService`), BCrypt Password Encryption |
-| **AI / ML Service** | Python, FastAPI, Uvicorn, Scikit-Learn, Pandas, NumPy, Joblib |
-| **Database** | MySQL |
-| **Testing** | JUnit 5, Mockito (Spring Boot), Pytest (FastAPI ML Service) |
+> 🚀 Hardened Production Architecture built with **React 19 (Vite)**, **Spring Boot 3/4 (Spring Security + JWT + Refresh Tokens)**, **Python FastAPI (Scikit-Learn ML)**, **MySQL 8.0**, and **Nginx Reverse Proxy**.
 
 ---
 
 ## 🏗️ System Architecture
 
-```text
-                   ┌──────────────────────────────┐
-                   │      User / Hospital         │
-                   └──────────────┬───────────────┘
-                                  │
-                                  ▼
-                   ┌──────────────────────────────┐
-                   │     React + Vite Frontend    │
-                   │      (Port: 5173)            │
-                   └──────────────┬───────────────┘
-                                  │
-                        REST API + JWT Bearer
-                                  │
-                                  ▼
-                   ┌──────────────────────────────┐        REST API (/predict, /monitoring)       ┌──────────────────────────────┐
-                   │     Spring Boot Backend      │ ◄───────────────────────────────────────────► │   FastAPI ML Microservice    │
-                   │      (Port: 8080)            │   (Graceful Rule-Based Fallback if Offline)   │   smartblood-ml (Port: 8000) │
-                   └──────────────┬───────────────┘                                               └──────────────────────────────┘
-                                  │
-                           Spring Data JPA
-                                  │
-                                  ▼
-                   ┌──────────────────────────────┐
-                   │        MySQL Database        │
-                   │       (blood_donor_db)       │
-                   └──────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Client["Client Tier"]
+        Browser["React 19 + Vite Frontend\n(Port: 5173 / HTTPS)"]
+    end
+
+    subgraph ReverseProxy["Edge / Reverse Proxy Tier"]
+        Nginx["Nginx Reverse Proxy & TLS Termination\n(Port 80 -> 443 HTTPS)\nHSTS, CSP, X-Frame-Options, Rate Limiting"]
+    end
+
+    subgraph AppTier["Application Tier"]
+        Backend["Spring Boot 3/4 Backend\n(Port: 8080)\nSpring Security + JWT (15 min) + Refresh Cookie (7 days)\nRateLimiter (Login: 5/min, Reg: 3/min, Search: 30/min)\nEmergency Escalation Engine"]
+        ML["FastAPI Machine Learning Service\n(Port: 8000)\nCalibrated Random Forest + SHA-256 Model Integrity\nStrict Origin Restriction + Hidden /monitoring (404)"]
+    end
+
+    subgraph DataTier["Data Tier"]
+        MySQL[("MySQL 8.0 Database\n(blood_donor)\nOptimized Indexes on blood_group, location, available\nrefresh_tokens & users tables")]
+    end
+
+    Browser -->|HTTPS / WSS| Nginx
+    Nginx -->|/api/ REST + HttpOnly Cookie| Backend
+    Nginx -->|SPA Static Assets| Browser
+    Backend -->|Internal REST JSON (No Browser CORS)| ML
+    Backend -->|Spring Data JPA / HikariCP| MySQL
 ```
 
 ---
 
-## 🔗 Core API Endpoints
+## 🔒 Security Hardening & Architecture Audit
 
-### 🔐 Authentication & Users
-```text
-POST   /api/auth/login                                  - Authenticate user & return JWT
-POST   /api/users                                       - Register new user / donor account
-GET    /api/users/me                                    - Get logged-in user profile
-PUT    /api/users/me                                    - Update personal account info
-```
+The SmartBlood application has undergone a comprehensive full-stack security audit and hardening addressing all 17 prioritized controls:
 
-### 🩸 Donors & AI Matching
-```text
-POST   /api/donors                                      - Create donor profile
-GET    /api/donors/me                                   - Get current user's donor profile
-PUT    /api/donors/me                                   - Update donor profile & availability
-GET    /api/donors/{id}                                 - Get donor profile by ID
-GET    /api/donors/search                               - Search donors by blood group & city
-GET    /api/donors/nearby                               - GPS radius donor search (lat, lng, radius)
-POST   /api/donors/match                                - Run Explainable AI + ML donor matching
-GET    /api/eligibility/check/{donorId}                 - Check 90-day medical donation eligibility
-```
-
-### 🚨 Blood Requests & Emergency Triage
-```text
-POST   /api/requests                                    - Create a blood request
-GET    /api/requests                                    - List all blood requests
-GET    /api/requests/pending                            - List active pending requests
-GET    /api/requests/{id}                               - Get blood request details
-GET    /api/requests/{id}/priority                      - Get AI emergency priority score (/100)
-GET    /api/emergency/{id}/status                       - Get emergency fulfillment & escalation status
-GET    /api/emergency/{id}/coordinator                  - Get AI coordinator recommendation
-GET    /api/outreach/request/{id}/recommendations       - Get optimized donor outreach wave
-```
-
-### 🤝 Donor Responses, Notifications & Analytics
-```text
-POST   /api/request-responses/request/{id}/respond      - Accept a blood request
-POST   /api/request-responses/request/{id}/decline      - Decline a blood request
-GET    /api/request-responses/request/{id}/accepted     - List accepted donors (Request Owner only)
-GET    /api/request-responses/donor/{id}/reliability    - Get donor response reliability metrics
-GET    /api/dashboard/me                                - Get personalized dashboard KPIs
-GET    /api/analytics/demand                            - Get monthly blood demand forecast
-GET    /api/analytics/shortage-risk                     - Get regional blood shortage risk signals
-GET    /api/ml-monitoring                               - Get live ML microservice telemetry
-GET    /api/notifications/me/page                       - Get paginated user notifications
-PUT    /api/notifications/me/read-all                   - Mark all notifications as read
-```
-
-### 🧠 FastAPI ML Microservice (`smartblood-ml` - Port 8000)
-```text
-GET    /                                                - ML service health check
-POST   /predict                                         - Predict donor response probability
-GET    /monitoring                                      - Model telemetry & offline evaluation metrics
-GET    /response-time/status                            - Timestamp data readiness check
-```
+| # | Security Control | Description & Implementation Details | Status |
+| :-: | :--- | :--- | :-: |
+| **1** | **JWT Fail-Fast Secret** | `SecurityConfig.validateJwtSecret()` enforces minimum 32-character secret length at startup via `@PostConstruct`. Application fails loudly if secret is empty or absent. | ✅ Resolved |
+| **2** | **CORS Wildcard Elimination** | Removed dangerous `*` wildcard origin patterns. Explicit allowed origins read from `cors.allowed-origins` property. `AllowCredentials(true)` restricted strictly to whitelisted domains. | ✅ Resolved |
+| **3** | **ML Service CORS Restriction** | FastAPI ML service restricts origins via `ML_ALLOWED_ORIGINS` (default `http://localhost:8080`), disallows wildcards, and enforces `allow_credentials=False` for server-to-server calls. | ✅ Resolved |
+| **4** | **Short-Lived Access + Refresh Token** | JWT access tokens shortened to **15 minutes**. Database-backed `refresh_tokens` entity with 7-day expiration, `SameSite=Strict`, `HttpOnly` cookie delivery, and `/api/auth/refresh` rotation. | ✅ Resolved |
+| **5** | **Backend Input Validation** | Jakarta Validation (`@Valid`, `@NotBlank`, `@Email`, `@Size`, `@Pattern`) added across DTOs and entities. Custom `@ValidBloodGroup` constraint validator and global `@RestControllerAdvice` error handler. | ✅ Resolved |
+| **6** | **Auth Rate Limiting** | Thread-safe in-memory token bucket `RateLimitFilter` configured for 5 req/min on `/api/auth/login`, 3 req/min on registration, and 30 req/min on search. Emits HTTP 429 with `Retry-After: 60`. | ✅ Resolved |
+| **7** | **Database Indexes & Migration** | High-performance indexes added for `blood_group`, `location`, `available`, `last_donation_date`, composite `(blood_group, location, available)`, `(latitude, longitude)`, and `refresh_tokens(token)`. `schema.sql` provided. | ✅ Resolved |
+| **8** | **Donor Verification & OTP Flow** | Added `emailVerified` boolean flag on users with OTP verification endpoints (`/api/auth/send-verification-otp` and `/api/auth/verify-otp`). Donor search is restricted until verified. | ✅ Resolved |
+| **9** | **Secure Token Storage** | Frontend access tokens maintained in memory with transparent session restoration via HttpOnly refresh cookie on application mount. Interceptor strictly restricts token transmission to verified backend origins. | ✅ Resolved |
+| **10** | **Environment Variable Hygiene** | All sensitive credentials externalized into `.env.example` templates; root `.gitignore` excludes all `.env` files. Frontend uses `import.meta.env.VITE_API_BASE_URL` with fallback. | ✅ Resolved |
+| **11** | **Emergency UX & Quick Action Bar** | High-contrast emergency request button above the fold on `Home.jsx`, prominent 24/7 helpline banner card with one-tap `tel:` links, and persistent bottom action bar on mobile viewports. | ✅ Resolved |
+| **12** | **ML Model SHA-256 Integrity** | `smartblood-ml/models/model.sha256` generated. ML loader verifies SHA-256 hash before loading; on mismatch logs `[ML_INTEGRITY_MISMATCH]` and falls back gracefully to rule-based scoring without crashing. | ✅ Resolved |
+| **13** | **Secure ML Monitoring Endpoint** | `/monitoring` returns HTTP 404 (Not Found) when `SMARTBLOOD_MONITORING_TOKEN` is unset in the environment, obscuring internal endpoints from unauthorized discovery. | ✅ Resolved |
+| **14** | **Production TLS Reverse Proxy** | `deploy/nginx.conf` configured with TLS 1.2/1.3, automatic HTTP-to-HTTPS redirect, proxy forwarding headers (`X-Forwarded-For`, `X-Forwarded-Proto`), HSTS, CSP, and `server.forward-headers-strategy=framework`. | ✅ Resolved |
+| **15** | **Production Dockerization** | Multi-stage Dockerfiles for Spring Boot (Eclipse Temurin JRE 21), React (Nginx Alpine), and ML (Python Slim). Unified `docker-compose.yml` with healthchecks and `docker-compose.override.yml`. | ✅ Resolved |
+| **16** | **Automated Security Test Suite** | Automated test suites in Java (`SecurityHardeningTests`), Python (`test_main.py`), and JavaScript (`api.test.js`) verifying JWT fail-fast, CORS, rate limiting, and URL isolation. | ✅ Resolved |
+| **17** | **Security Documentation** | Comprehensive documentation, architecture diagram, security audit checklist, and deployment guides in `README.md`. | ✅ Resolved |
 
 ---
 
-## ⚙️ Local Setup & Installation
+## 🔑 Environment Variables Reference
 
-### 1. Database Setup (MySQL)
-Create the MySQL database:
-```sql
-CREATE DATABASE blood_donor_db;
-```
+### Backend (`Blood-donor-app-backend/demo/.env`)
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `SPRING_DATASOURCE_URL` | `jdbc:mysql://localhost:3306/blood_donor` | MySQL connection string |
+| `DB_USERNAME` | `root` | Database username |
+| `DB_PASSWORD` | `your_mysql_password` | Database password |
+| `JWT_SECRET` | *Must be >= 32 characters* | HMAC-SHA256 signature secret key |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Comma-separated allowed frontend origins |
+| `RATE_LIMIT_LOGIN_PER_MINUTE` | `5` | Maximum login attempts per IP per minute |
+| `RATE_LIMIT_REGISTER_PER_MINUTE`| `3` | Maximum user registration requests per minute |
+| `RATE_LIMIT_SEARCH_PER_MINUTE` | `30` | Maximum donor search requests per minute |
+| `MAIL_ENABLED` | `false` | Enable live SMTP mail delivery (logs OTP to console if false) |
+| `SMARTBLOOD_ML_URL` | `http://localhost:8000/predict` | Internal URL for ML service |
 
-### 2. Start the Python ML Microservice (`smartblood-ml`)
+### Frontend (`Blood-donor-app/.env`)
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `VITE_API_BASE_URL` | `http://localhost:8080` | Spring Boot backend REST endpoint |
+
+### ML Microservice (`smartblood-ml/.env`)
+| Variable | Default Value | Description |
+| :--- | :--- | :--- |
+| `ML_ALLOWED_ORIGINS` | `http://localhost:8080` | Allowed upstream caller origins |
+| `SMARTBLOOD_MONITORING_TOKEN` | *(empty)* | Secret key for `/monitoring` access (endpoint returns 404 if unset) |
+| `SMARTBLOOD_MODEL_DIR` | `models` | Directory containing serialized `.joblib` models |
+
+---
+
+## 🐳 Docker Compose Quickstart
+
+Run the complete 3-tier SmartBlood stack with a single command:
+
 ```bash
-cd smartblood-ml
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-- **ML Swagger UI Docs:** `http://localhost:8000/docs`
+# 1. Clone repository
+git clone https://github.com/Bala-techdev/Blood-donors-finder-application-.git
+cd Blood-donors-finder-application-
 
-### 3. Start the Spring Boot Backend (`Blood-donor-app-backend`)
+# 2. Configure environment credentials
+cp Blood-donor-app-backend/demo/.env.example Blood-donor-app-backend/demo/.env
+cp Blood-donor-app/.env.example Blood-donor-app/.env
+
+# 3. Launch stack using Docker Compose
+docker compose up --build -d
+
+# 4. View running services
+docker compose ps
+```
+
+Services will be accessible at:
+- **Web Application:** `http://localhost:5173`
+- **Backend API:** `http://localhost:8080/swagger-ui/index.html`
+- **ML Service Health:** `http://localhost:8000/health`
+- **Reverse Proxy:** `http://localhost:80` (redirects to HTTPS on `:443`)
+
+---
+
+## 🧪 Verification & Security Test Suite
+
+Run the automated verification tests for each tier:
+
+### 1. Backend Security Controls (JUnit 5)
 ```bash
 cd Blood-donor-app-backend/demo
-./mvnw spring-boot:run
+./mvnw test -Dtest=SecurityHardeningTests
 ```
-- **Backend Server:** `http://localhost:8080`
+*Verifies JWT fail-fast startup, CORS origin rejection, rate limiting (HTTP 429), blood group validation, and refresh token lifecycle.*
 
-### 4. Start the React Frontend (`Blood-donor-app`)
+### 2. Machine Learning Security & Fallback (Python Unittest)
+```bash
+cd smartblood-ml
+venv/bin/python test_main.py
+```
+*Verifies SHA-256 model integrity validation, `[ML_INTEGRITY_MISMATCH]` rule-based fallback, and `/monitoring` 404/401/200 authorization behavior.*
+
+### 3. Frontend Interceptor Domain Isolation (Node Test Runner)
 ```bash
 cd Blood-donor-app
-npm install
-npm run dev
+npm test
 ```
-- **Frontend App:** `http://localhost:5173`
-
----
-
-## 🧪 Running Automated Tests
-
-### Backend Unit & Controller Tests (JUnit 5 / Mockito)
-```bash
-cd Blood-donor-app-backend/demo
-./mvnw test
-```
-
-### ML Service Tests (Pytest)
-```bash
-cd smartblood-ml
-pytest
-```
-
----
-
-## 🔒 Security & Privacy
-
-- **Stateless JWT Authentication:** Protected API routes verified via `JwtService` and `SecurityConfig`.
-- **Password Hashing:** BCrypt encryption for all stored credentials.
-- **Contact Privacy:** Donor phone numbers and email addresses are hidden from public listings and only shared with the verified owner of an accepted blood request.
-- **Environment Variables:** Database credentials and secrets are externalized and excluded via `.gitignore`:
-  ```properties
-  spring.datasource.url=${DB_URL}
-  spring.datasource.username=${DB_USERNAME}
-  spring.datasource.password=${DB_PASSWORD}
-  ```
-
----
-
-## 🚀 Future Roadmap (v2.0)
-
-- **Closed-Loop Online ML Retraining:** Automatically feed live donor acceptance/decline timestamps back into the FastAPI training pipeline to transition from synthetic data to real-world ground-truth learning.
-- **Twilio SMS & WhatsApp Cloud API Gateway:** Dispatch automated SMS alerts when `EmergencyEscalationScheduler` triggers so offline donors are reached immediately.
-- **Hospital Blood Bank Inventory Sync (e-RaktKosh / HL7 FHIR):** Query regional hospital blood bank stock before paging external community donors.
-- **Real-Time WebSocket Push Notifications:** Instant browser and mobile push alerts via Spring WebSockets (STOMP).
+*Verifies that Bearer access tokens are never leaked to external third-party origins (e.g. OpenStreetMap / Google Maps).*
 
 ---
 

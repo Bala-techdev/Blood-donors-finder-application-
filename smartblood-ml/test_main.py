@@ -71,17 +71,54 @@ class PredictionApiTests(unittest.TestCase):
 
     def test_monitoring_reports_live_counts_without_live_accuracy(self):
         main.predict(main.DonorPrediction(**VALID_INPUT))
-        with patch.object(main, "MONITORING_TOKEN", "test-token"):
+        with patch.dict("os.environ", {"SMARTBLOOD_MONITORING_TOKEN": "test-token"}):
             result = main.monitoring("test-token")
         self.assertEqual(result["prediction_requests"], 1)
         self.assertEqual(result["successful_predictions"], 1)
         self.assertIsNone(result["evaluation_metrics"])
         self.assertIn("ground-truth", result["evaluation_notice"])
 
-    def test_monitoring_requires_authorization(self):
-        with self.assertRaises(main.HTTPException) as error:
-            main.monitoring(None)
-        self.assertEqual(error.exception.status_code, 401)
+    def test_monitoring_no_token_returns_404(self):
+        """Item 13: Unconfigured monitoring token returns 404 Not Found to hide endpoint."""
+        with patch.dict("os.environ", {"SMARTBLOOD_MONITORING_TOKEN": ""}, clear=True):
+            with self.assertRaises(main.HTTPException) as ctx:
+                main.monitoring(None)
+            self.assertEqual(ctx.exception.status_code, 404)
+
+    def test_monitoring_wrong_token_returns_401(self):
+        """Item 13: Configured monitoring token rejects mismatched credentials with 401."""
+        with patch.dict("os.environ", {"SMARTBLOOD_MONITORING_TOKEN": "secret-123"}):
+            with self.assertRaises(main.HTTPException) as ctx:
+                main.monitoring("wrong-token")
+            self.assertEqual(ctx.exception.status_code, 401)
+
+    def test_monitoring_correct_token_returns_200(self):
+        """Item 13: Configured monitoring token with matching header succeeds."""
+        with patch.dict("os.environ", {"SMARTBLOOD_MONITORING_TOKEN": "secret-123"}):
+            result = main.monitoring("secret-123")
+            self.assertIn("model_name", result)
+            self.assertIn("prediction_requests", result)
+
+    def test_model_integrity_mismatch_falls_back(self):
+        """Item 12: Checksum mismatch triggers [ML_INTEGRITY_MISMATCH] and falls back safely."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            fake_model = temp_path / "response_model.joblib"
+            fake_model.write_bytes(b"corrupted or modified model content")
+            fake_sha = temp_path / "model.sha256"
+            fake_sha.write_text("0000000000000000000000000000000000000000000000000000000000000000")
+
+            main._response_model = None
+            with patch.object(main, "RESPONSE_MODEL_PATH", fake_model):
+                loaded = main._load_response_model()
+                self.assertIsNone(loaded)
+                self.assertFalse(main._model_integrity_ok)
+
+    def test_health_endpoint_reports_status(self):
+        """Item 12: /health endpoint reports UP and model_integrity_ok."""
+        health_info = main.health()
+        self.assertEqual(health_info["status"], "UP")
+        self.assertIn("model_integrity_ok", health_info)
 
 
 class ReliabilityApiTests(unittest.TestCase):

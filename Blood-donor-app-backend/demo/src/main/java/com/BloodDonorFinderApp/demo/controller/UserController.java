@@ -3,6 +3,7 @@ package com.BloodDonorFinderApp.demo.controller;
 import com.BloodDonorFinderApp.demo.entity.User;
 import com.BloodDonorFinderApp.demo.service.UserService;
 
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -10,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:5173")
 public class UserController {
 
     private final UserService userService;
@@ -25,7 +25,7 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> createUser(
-            @RequestBody User user
+            @RequestBody @Valid User user
     ) {
         User createdUser = userService.createUser(user);
 
@@ -57,7 +57,7 @@ public class UserController {
 
     @PutMapping("/me")
     public ResponseEntity<User> updateCurrentUser(
-            @RequestBody User updatedUser,
+            @RequestBody @Valid User updatedUser,
             Authentication authentication
     ) {
         String email = authentication.getName();

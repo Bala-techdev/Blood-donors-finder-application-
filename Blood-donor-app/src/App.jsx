@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import api, { setAccessToken } from "./services/api";
 import Home from "./pages/Home";
 import Register from "./pages/auth/Register";
 import Login from "./pages/auth/Login";
@@ -15,6 +17,30 @@ import DonorRecommendations from "./pages/notifications/DonorRecommendations";
 import HealthSidebar from "./components/guidelines/HealthSidebar";
 
 function App() {
+    useEffect(() => {
+        // Attempt silent session restore on reload via HttpOnly refresh cookie
+        api.post("/api/auth/refresh")
+            .then((res) => {
+                if (res.data?.token) {
+                    setAccessToken(res.data.token);
+                    if (res.data.userId) {
+                        const user = {
+                            id: res.data.userId,
+                            name: res.data.name,
+                            email: res.data.email,
+                            phone: res.data.phone,
+                            role: res.data.role,
+                            emailVerified: res.data.emailVerified
+                        };
+                        localStorage.setItem("bloodDonorUser", JSON.stringify(user));
+                    }
+                }
+            })
+            .catch(() => {
+                // Non-authenticated guest or expired refresh token session
+            });
+    }, []);
+
     return (
         <BrowserRouter>
             <div className="app-shell">

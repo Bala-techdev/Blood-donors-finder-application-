@@ -3,6 +3,7 @@ package com.BloodDonorFinderApp.demo.controller;
 import com.BloodDonorFinderApp.demo.entity.BloodRequest;
 import com.BloodDonorFinderApp.demo.service.BloodRequestService;
 import com.BloodDonorFinderApp.demo.service.EmergencyPriorityService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -13,7 +14,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/requests")
-@CrossOrigin(origins = "http://localhost:5173")
 public class BloodRequestController {
 
     private final BloodRequestService bloodRequestService;
@@ -34,7 +34,7 @@ public class BloodRequestController {
 
     @PostMapping
     public ResponseEntity<?> createRequest(
-            @RequestBody BloodRequest request,
+            @RequestBody @Valid BloodRequest request,
             Authentication authentication
     ) {
 

@@ -2,32 +2,60 @@ package com.BloodDonorFinderApp.demo.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(
+        name = "users",
+        indexes = {
+                @Index(name = "idx_user_email", columnList = "email", unique = true)
+        }
+)
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Name is required")
+    @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
     @Column(nullable = false)
     private String name;
 
+    @NotBlank(message = "Email is required")
+    @Email(message = "Must be a valid email address")
     @Column(nullable = false, unique = true)
     private String email;
 
+    @NotBlank(message = "Password is required")
+    @Size(min = 6, message = "Password must be at least 6 characters")
     @Column(nullable = false)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
+    @NotBlank(message = "Phone number is required")
+    @Pattern(regexp = "^[+0-9\\s-]{7,20}$", message = "Phone must be a valid number between 7 and 20 digits")
     @Column(nullable = false)
     private String phone;
 
     @Column(nullable = false)
     private String role = "USER";
+
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
+    @Column(length = 6)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String verificationOtp;
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private Instant otpExpiresAt;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -100,6 +128,30 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public String getVerificationOtp() {
+        return verificationOtp;
+    }
+
+    public void setVerificationOtp(String verificationOtp) {
+        this.verificationOtp = verificationOtp;
+    }
+
+    public Instant getOtpExpiresAt() {
+        return otpExpiresAt;
+    }
+
+    public void setOtpExpiresAt(Instant otpExpiresAt) {
+        this.otpExpiresAt = otpExpiresAt;
     }
 
     public LocalDateTime getCreatedAt() {

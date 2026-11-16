@@ -65,7 +65,13 @@ function FindDonors() {
             setDonors(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             console.error(err);
-            setError("Unable to load donors. Please try again.");
+            if (err.response?.status === 403 && (err.response?.data?.error === "EMAIL_NOT_VERIFIED" || err.response?.data?.message?.includes("verify"))) {
+                setError(err.response.data.message || "Email verification required: Please verify your email via OTP to search and view donors.");
+            } else if (err.response?.status === 429) {
+                setError("Rate limit exceeded: Please wait 60 seconds before submitting more search queries.");
+            } else {
+                setError("Unable to load donors. Please try again.");
+            }
         } finally {
             setLoading(false);
         }

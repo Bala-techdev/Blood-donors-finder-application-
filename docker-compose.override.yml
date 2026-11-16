@@ -1,0 +1,17 @@
+# Development override: binds internal container ports directly to host
+services:
+  mysql:
+    ports:
+      - "3306:3306"
+
+  backend:
+    ports:
+      - "8080:8080"
+
+  ml:
+    ports:
+      - "8000:8000"
+
+  frontend:
+    ports:
+      - "5173:80"

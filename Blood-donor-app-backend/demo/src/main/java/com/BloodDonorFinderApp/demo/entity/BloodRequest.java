@@ -1,12 +1,24 @@
 package com.BloodDonorFinderApp.demo.entity;
 
+import com.BloodDonorFinderApp.demo.validation.ValidBloodGroup;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "blood_requests")
+@Table(
+        name = "blood_requests",
+        indexes = {
+                @Index(name = "idx_request_status_date", columnList = "status, requiredDate"),
+                @Index(name = "idx_request_blood_group", columnList = "bloodGroup"),
+                @Index(name = "idx_request_location", columnList = "location")
+        }
+)
 public class BloodRequest {
 
     @Id
@@ -17,18 +29,25 @@ public class BloodRequest {
     @JoinColumn(name = "requester_id", nullable = false)
     private User requester;
 
+    @NotBlank(message = "Patient name is required")
     @Column(nullable = false)
     private String patientName;
 
+    @NotBlank(message = "Blood group is required")
+    @ValidBloodGroup
     @Column(nullable = false)
     private String bloodGroup;
 
+    @NotNull(message = "Units required cannot be null")
+    @Min(value = 1, message = "At least 1 unit of blood must be requested")
     @Column(nullable = false)
     private Integer units;
 
+    @NotBlank(message = "Hospital name is required")
     @Column(nullable = false)
     private String hospitalName;
 
+    @NotBlank(message = "Location is required")
     @Column(nullable = false)
     private String location;
 
@@ -36,9 +55,12 @@ public class BloodRequest {
 
     private Double longitude;
 
+    @NotBlank(message = "Urgency level is required")
+    @Pattern(regexp = "^(?i)(LOW|MEDIUM|HIGH|NORMAL|CRITICAL)$", message = "Urgency must be LOW, MEDIUM, NORMAL, HIGH, or CRITICAL")
     @Column(nullable = false)
     private String urgency;
 
+    @NotNull(message = "Required date cannot be null")
     @Column(nullable = false)
     private LocalDate requiredDate;
 
