@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Blood Donor Finder</string>
+    <string name="title_activity_main">Blood Donor Finder</string>
+    <string name="package_name">com.blooddonor.app</string>
+    <string name="custom_url_scheme">com.blooddonor.app</string>
+</resources>
