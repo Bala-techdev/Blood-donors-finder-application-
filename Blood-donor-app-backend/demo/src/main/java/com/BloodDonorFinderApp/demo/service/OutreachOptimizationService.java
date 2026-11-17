@@ -42,6 +42,7 @@ public class OutreachOptimizationService {
         BloodRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Blood request not found"));
         User requester = userRepository.findByEmail(email)
+                .or(() -> userRepository.findByEmailIgnoreCase(email))
                 .orElseThrow(() -> new RuntimeException("User not found"));
         if (request.getRequester() == null
                 || !request.getRequester().getId().equals(requester.getId())) {

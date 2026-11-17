@@ -283,6 +283,32 @@
     border-color: var(--danger-border);
     color: var(--danger);
     font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.donor-error-verify-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: var(--primary, #e11d48);
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-md, 8px);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(225, 29, 72, 0.2);
+    transition: all 0.2s ease;
+}
+
+.donor-error-verify-btn:hover {
+    background: var(--primary-dark, #be123c);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(225, 29, 72, 0.3);
 }
 
 /* Mobile Breakpoints (< 640px) */

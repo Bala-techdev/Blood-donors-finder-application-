@@ -37,7 +37,13 @@ function Login() {
         try {
             setLoading(true);
 
-            const response = await api.post("/api/auth/login", formData);
+            // Frontend safeguard: normalise email to trim whitespace and lowercase
+            const payload = {
+                email: formData.email.trim().toLowerCase(),
+                password: formData.password
+            };
+
+            const response = await api.post("/api/auth/login", payload);
             const loginData = response.data;
 
             setAccessToken(loginData.token);

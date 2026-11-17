@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import OtpVerificationModal from "../../components/auth/OtpVerificationModal";
 import "./Profile.css";
 
 const BLOOD_COMPATIBILITY_INFO = {
@@ -48,6 +49,8 @@ function Profile() {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [donorProfileExists, setDonorProfileExists] = useState(false);
+    const [emailVerified, setEmailVerified] = useState(Boolean(user?.emailVerified));
+    const [showOtpModal, setShowOtpModal] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -76,6 +79,8 @@ function Profile() {
                     "bloodDonorUser",
                     JSON.stringify(updatedUser)
                 );
+
+                setEmailVerified(Boolean(updatedUser.emailVerified));
 
                 setFormData((previous) => ({
                     ...previous,
@@ -129,6 +134,7 @@ function Profile() {
                         location: "",
                         available: true
                     }));
+                    setEditing(true);
                 } else {
                     console.error(
                         "Unable to load donor information:",
@@ -418,7 +424,10 @@ function Profile() {
             <main className="profile-page-main">
                 {/* PROFILE HERO */}
                 <section className="profile-hero-card">
-                    <div className="profile-big-avatar">
+                    <div
+                        className="profile-big-avatar"
+                        title={`Account Name Initial: ${formData.name ? formData.name.charAt(0).toUpperCase() : "U"}`}
+                    >
                         {formData.name
                             ? formData.name.charAt(0).toUpperCase()
                             : "U"}
@@ -437,7 +446,30 @@ function Profile() {
                             }}
                         >
                             <span className="profile-member-badge">
-                                🩸 SmartBlood Member
+                                👤 Initial: {formData.name ? formData.name.charAt(0).toUpperCase() : "U"}
+                            </span>
+
+                            <span
+                                className="profile-member-badge"
+                                style={{
+                                    background: formData.bloodGroup ? "#fee2e2" : "#f1f5f9",
+                                    color: formData.bloodGroup ? "#991b1b" : "#475569",
+                                    border: formData.bloodGroup ? "1px solid #fecaca" : "1px solid #cbd5e1",
+                                    fontWeight: "700"
+                                }}
+                            >
+                                {formData.bloodGroup ? `🩸 Blood Group: ${formData.bloodGroup}` : "⚠️ Blood Group: Not Set"}
+                            </span>
+
+                            <span
+                                className="profile-member-badge"
+                                style={{
+                                    background: emailVerified ? "#ecfdf5" : "#fff1f2",
+                                    color: emailVerified ? "#047857" : "#be123c",
+                                    border: emailVerified ? "1px solid #a7f3d0" : "1px solid #fda4af"
+                                }}
+                            >
+                                {emailVerified ? "✓ Email Verified" : "⚠️ Email Unverified"}
                             </span>
 
                             {donorProfileExists && (
@@ -493,6 +525,75 @@ function Profile() {
                         {editing ? "Cancel" : "✎ Edit Profile"}
                     </button>
                 </section>
+
+                {/* VERIFICATION NOTICE BANNER IF NOT VERIFIED */}
+                {!emailVerified && (
+                    <div
+                        style={{
+                            background: "#fff1f2",
+                            border: "1px solid #fecdd3",
+                            borderRadius: "12px",
+                            padding: "1rem 1.25rem",
+                            marginBottom: "1.25rem",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            flexWrap: "wrap",
+                            gap: "1rem"
+                        }}
+                    >
+                        <div>
+                            <strong style={{ color: "#9f1239", display: "block" }}>
+                                ⚠️ Email Verification Required
+                            </strong>
+                            <p style={{ margin: "4px 0 0 0", color: "#881337", fontSize: "0.875rem" }}>
+                                Your email address must be verified via OTP to search and view donors across the network.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setShowOtpModal(true)}
+                            style={{
+                                background: "#e11d48",
+                                color: "#ffffff",
+                                border: "none",
+                                padding: "0.5rem 1rem",
+                                borderRadius: "8px",
+                                fontWeight: "600",
+                                cursor: "pointer",
+                                fontSize: "0.875rem"
+                            }}
+                        >
+                            🔐 Verify Now with OTP
+                        </button>
+                    </div>
+                )}
+
+                {/* ONBOARDING BANNER IF DONOR PROFILE NOT CREATED */}
+                {!donorProfileExists && (
+                    <div
+                        style={{
+                            background: "#eff6ff",
+                            border: "1px solid #bfdbfe",
+                            borderRadius: "12px",
+                            padding: "1rem 1.25rem",
+                            marginBottom: "1.25rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "1rem"
+                        }}
+                    >
+                        <div style={{ fontSize: "2rem" }}>👋</div>
+                        <div>
+                            <strong style={{ color: "#1e40af", display: "block" }}>
+                                Welcome to SmartBlood! Complete Your Donor Profile
+                            </strong>
+                            <p style={{ margin: "4px 0 0 0", color: "#1e3a8a", fontSize: "0.875rem" }}>
+                                Select your <strong>Blood Group</strong> and <strong>Location/City</strong> below, then click <strong>"Save Changes"</strong> to activate your donor profile and enable emergency notifications.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* PROFILE COMPLETION BAR */}
                 <div
@@ -900,6 +1001,15 @@ function Profile() {
                         Logout
                     </button>
                 </section>
+
+                <OtpVerificationModal
+                    isOpen={showOtpModal}
+                    onClose={() => setShowOtpModal(false)}
+                    onSuccess={() => {
+                        setEmailVerified(true);
+                        setMessage("Email verified successfully! You can now search and connect with donors.");
+                    }}
+                />
             </main>
         </div>
     );

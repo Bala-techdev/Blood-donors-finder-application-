@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import DonorCard from "../../components/navbar/donor/DonorCard";
+import OtpVerificationModal from "../../components/auth/OtpVerificationModal";
 import "./FindDonors.css";
 
 const COMPATIBLE_DONORS = {
@@ -31,6 +32,7 @@ function FindDonors() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [smartMatching, setSmartMatching] = useState(false);
+    const [showOtpModal, setShowOtpModal] = useState(false);
 
     // =========================
     // GPS STATE
@@ -573,7 +575,21 @@ function FindDonors() {
                 {/* =========================
                     ERROR
                 ========================= */}
-                {error && <div className="donor-error">{error}</div>}
+                {error && (
+                    <div className="donor-error">
+                        <div>{error}</div>
+                        {(error.toLowerCase().includes("otp") ||
+                            error.toLowerCase().includes("verif")) && (
+                            <button
+                                type="button"
+                                className="donor-error-verify-btn"
+                                onClick={() => setShowOtpModal(true)}
+                            >
+                                🔐 Verify Email with OTP
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* =========================
                     LOADING
@@ -671,6 +687,15 @@ function FindDonors() {
                         </p>
                     </div>
                 )}
+
+                <OtpVerificationModal
+                    isOpen={showOtpModal}
+                    onClose={() => setShowOtpModal(false)}
+                    onSuccess={() => {
+                        setError("");
+                        fetchDonors();
+                    }}
+                />
             </main>
         </div>
     );

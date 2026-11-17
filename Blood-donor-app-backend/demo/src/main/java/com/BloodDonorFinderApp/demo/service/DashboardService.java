@@ -37,6 +37,7 @@ public class DashboardService {
 
     public DashboardStats getStats(String email) {
         User user = userRepository.findByEmail(email)
+                .or(() -> userRepository.findByEmailIgnoreCase(email))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<BloodRequest> requests =

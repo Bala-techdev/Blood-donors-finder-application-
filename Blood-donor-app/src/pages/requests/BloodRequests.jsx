@@ -344,10 +344,31 @@ function BloodRequests() {
                             background: "#fef2f2",
                             border: "1px solid #fecaca",
                             color: "#991b1b",
-                            fontWeight: "600"
+                            fontWeight: "600",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            flexWrap: "wrap",
+                            gap: "8px"
                         }}
                     >
-                        ⚠️ {actionError}
+                        <span>⚠️ {actionError}</span>
+                        {actionError.toLowerCase().includes("donor profile") && (
+                            <Link
+                                to="/profile"
+                                style={{
+                                    background: "#e11d48",
+                                    color: "#ffffff",
+                                    padding: "6px 12px",
+                                    borderRadius: "6px",
+                                    textDecoration: "none",
+                                    fontSize: "0.85rem",
+                                    fontWeight: "600"
+                                }}
+                            >
+                                Setup Donor Profile →
+                            </Link>
+                        )}
                     </div>
                 )}
 

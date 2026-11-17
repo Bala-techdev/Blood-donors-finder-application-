@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Entity
 @Table(
@@ -61,8 +62,14 @@ public class User {
     private LocalDateTime createdAt;
 
     @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
+    @PreUpdate
+    protected void onPersistOrUpdate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (email != null) {
+            email = email.trim().toLowerCase(Locale.ROOT);
+        }
     }
 
     public User() {
@@ -76,7 +83,7 @@ public class User {
             String role
     ) {
         this.name = name;
-        this.email = email;
+        this.email = email != null ? email.trim().toLowerCase(Locale.ROOT) : null;
         this.password = password;
         this.phone = phone;
         this.role = role;
@@ -103,7 +110,7 @@ public class User {
     }
 
     public void setEmail(String email) {
-        this.email = email;
+        this.email = email != null ? email.trim().toLowerCase(Locale.ROOT) : null;
     }
 
     public String getPassword() {

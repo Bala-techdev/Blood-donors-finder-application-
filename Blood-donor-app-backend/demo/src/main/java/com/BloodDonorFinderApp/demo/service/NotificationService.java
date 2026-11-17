@@ -89,6 +89,7 @@ public class NotificationService {
             Pageable pageable
     ) {
         User user = userRepository.findByEmail(email)
+                .or(() -> userRepository.findByEmailIgnoreCase(email))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(

@@ -171,6 +171,7 @@ public class DonorRequestResponseService {
         User user =
                 userRepository
                         .findByEmail(email)
+                        .or(() -> userRepository.findByEmailIgnoreCase(email))
                         .orElseThrow(() ->
                                 new RuntimeException(
                                         "User not found"
@@ -186,7 +187,7 @@ public class DonorRequestResponseService {
                         .findByUserId(user.getId())
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Donor profile not found for this user"
+                                        "Donor profile not found for this user. Please complete your donor profile first."
                                 )
                         );
 
@@ -355,6 +356,7 @@ public class DonorRequestResponseService {
         User user =
                 userRepository
                         .findByEmail(email)
+                        .or(() -> userRepository.findByEmailIgnoreCase(email))
                         .orElseThrow(() ->
                                 new RuntimeException(
                                         "User not found"
@@ -370,7 +372,7 @@ public class DonorRequestResponseService {
                         .findByUserId(user.getId())
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Donor profile not found for this user"
+                                        "Donor profile not found for this user. Please complete your donor profile first."
                                 )
                         );
 

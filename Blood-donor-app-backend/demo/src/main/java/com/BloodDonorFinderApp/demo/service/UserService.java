@@ -5,6 +5,7 @@ import com.BloodDonorFinderApp.demo.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -24,7 +25,16 @@ public class UserService {
     // Registration
     public User createUser(User user) {
 
-        if (userRepository.existsByEmail(user.getEmail())) {
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            throw new RuntimeException("Email is required");
+        }
+
+        // Normalise email (trim whitespace + lowercase with Locale.ROOT)
+        String normalisedEmail = user.getEmail().trim().toLowerCase(Locale.ROOT);
+        user.setEmail(normalisedEmail);
+
+        if (userRepository.existsByEmailIgnoreCase(normalisedEmail)
+                || userRepository.existsByEmail(normalisedEmail)) {
             throw new RuntimeException("Email already registered");
         }
 
@@ -35,9 +45,13 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // Find user by email
+    // Find user by email (case-insensitive)
     public Optional<User> getUserByEmail(String email) {
-        return userRepository.findByEmail(email);
+        if (email == null) {
+            return Optional.empty();
+        }
+        String normalisedEmail = email.trim().toLowerCase(Locale.ROOT);
+        return userRepository.findByEmailIgnoreCase(normalisedEmail);
     }
 
     // Update authenticated user
@@ -46,8 +60,10 @@ public class UserService {
             User updatedUser
     ) {
 
+        String normalisedEmail = email != null ? email.trim().toLowerCase(Locale.ROOT) : "";
+
         User existingUser = userRepository
-                .findByEmail(email)
+                .findByEmailIgnoreCase(normalisedEmail)
                 .orElseThrow(() ->
                         new RuntimeException("User not found")
                 );

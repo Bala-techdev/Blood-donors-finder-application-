@@ -159,7 +159,7 @@ public class DonorController {
         // Enforce email verification check for donor search (Item 8)
         if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
             String email = authentication.getName();
-            User currentUser = userRepository.findByEmail(email).orElse(null);
+            User currentUser = email != null ? userRepository.findByEmailIgnoreCase(email.trim().toLowerCase(java.util.Locale.ROOT)).orElse(null) : null;
             if (currentUser != null && !currentUser.isEmailVerified()) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
                         "error", "EMAIL_NOT_VERIFIED",
@@ -199,15 +199,22 @@ public class DonorController {
     // ==========================================
 
     @PostMapping("/match")
-    public ResponseEntity<
-            List<DonorMatchingService.DonorMatchResult>
-            > findMatchingDonors(
-            @RequestBody @Valid BloodRequest request
+    public ResponseEntity<List<DonorMatchingService.DonorMatchResult>> findMatchingDonors(
+            @RequestBody @Valid com.BloodDonorFinderApp.demo.dto.DonorMatchRequest request
     ) {
+        BloodRequest bloodRequest = new BloodRequest();
+        bloodRequest.setBloodGroup(request.getBloodGroup());
+        bloodRequest.setLocation(request.getLocation() != null && !request.getLocation().isBlank() ? request.getLocation() : "Unknown");
+        bloodRequest.setLatitude(request.getLatitude());
+        bloodRequest.setLongitude(request.getLongitude());
+        bloodRequest.setUrgency(request.getUrgency() != null && !request.getUrgency().isBlank() ? request.getUrgency() : "NORMAL");
+        bloodRequest.setPatientName(request.getPatientName() != null && !request.getPatientName().isBlank() ? request.getPatientName() : "Search Query");
+        bloodRequest.setHospitalName(request.getHospitalName() != null && !request.getHospitalName().isBlank() ? request.getHospitalName() : "Nearby Hospital");
+        bloodRequest.setUnits(request.getUnits() != null ? request.getUnits() : 1);
+        bloodRequest.setRequiredDate(java.time.LocalDate.now());
+
         return ResponseEntity.ok(
-                donorMatchingService.findBestDonors(
-                        request
-                )
+                donorMatchingService.findBestDonors(bloodRequest)
         );
     }
 

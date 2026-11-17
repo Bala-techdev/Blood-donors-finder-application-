@@ -56,7 +56,13 @@ function Register() {
         try {
             setLoading(true);
 
-            await api.post("/api/users", formData);
+            // Frontend safeguard: normalise email to trim whitespace and lowercase
+            const payload = {
+                ...formData,
+                email: formData.email.trim().toLowerCase()
+            };
+
+            await api.post("/api/users", payload);
 
             setSuccess("Registration successful! Redirecting to login...");
 

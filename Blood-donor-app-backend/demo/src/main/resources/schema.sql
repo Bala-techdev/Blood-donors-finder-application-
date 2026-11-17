@@ -18,6 +18,9 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_user_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Case-insensitive unique email index (MySQL 8.0+ functional index)
+CREATE UNIQUE INDEX idx_users_email_lower ON users ((LOWER(email)));
+
 -- 2. Refresh Tokens Table (Item 4 & Item 7)
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

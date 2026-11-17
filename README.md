@@ -60,6 +60,12 @@ The SmartBlood application has undergone a comprehensive full-stack security aud
 | **16** | **Automated Security Test Suite** | Automated test suites in Java (`SecurityHardeningTests`), Python (`test_main.py`), and JavaScript (`api.test.js`) verifying JWT fail-fast, CORS, rate limiting, and URL isolation. | ✅ Resolved |
 | **17** | **Security Documentation** | Comprehensive documentation, architecture diagram, security audit checklist, and deployment guides in `README.md`. | ✅ Resolved |
 
+### 📧 Email Case-Insensitive Normalization & Whitespace Trimming
+- **Registration (`POST /api/users`):** Emails are automatically stripped of surrounding whitespace and converted to lowercase using `Locale.ROOT` before uniqueness validation and database persistence (`UserService.createUser`).
+- **Login (`POST /api/auth/login`):** Login queries normalize input email and perform case-insensitive lookups via `UserRepository.findByEmailIgnoreCase()`, with security warnings logged on bad credentials or unknown accounts.
+- **Database Constraint:** MySQL 8.0+ functional index `CREATE UNIQUE INDEX idx_users_email_lower ON users ((LOWER(email)))` prevents duplicate accounts across case variations.
+- **Frontend Safeguards:** React `Login.jsx` and `Register.jsx` trim whitespace and lowercase email inputs before dispatching API requests.
+
 ---
 
 ## 🔑 Environment Variables Reference

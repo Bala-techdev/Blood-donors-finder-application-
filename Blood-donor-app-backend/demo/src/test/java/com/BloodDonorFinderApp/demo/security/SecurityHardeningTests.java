@@ -134,4 +134,16 @@ public class SecurityHardeningTests {
         validToken.setRevoked(true);
         assertTrue(validToken.isRevoked());
     }
+
+    @Test
+    @DisplayName("Email Normalisation: User entity automatically trims and lowercases email")
+    void userEntity_normalisesEmailAutomatically() {
+        User user = new User();
+        user.setName("Sarah");
+        user.setEmail("   SARAH.CONNOR@SKYNET.COM   ");
+        assertEquals("sarah.connor@skynet.com", user.getEmail());
+
+        User user2 = new User("John", "  JOHN.DOE@GMAIL.COM  ", "pass", "123", "USER");
+        assertEquals("john.doe@gmail.com", user2.getEmail());
+    }
 }

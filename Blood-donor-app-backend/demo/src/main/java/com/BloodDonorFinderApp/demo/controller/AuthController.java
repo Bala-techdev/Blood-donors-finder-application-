@@ -122,11 +122,14 @@ public class AuthController {
     @PostMapping("/send-verification-otp")
     public ResponseEntity<?> sendVerificationOtp(@RequestBody @Valid SendOtpRequest request) {
         try {
-            authService.sendVerificationOtp(request.getEmail());
-            return ResponseEntity.ok(Map.of(
-                    "status", "SUCCESS",
-                    "message", "Verification OTP sent to " + request.getEmail()
-            ));
+            String otp = authService.sendVerificationOtp(request.getEmail());
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("status", "SUCCESS");
+            response.put("message", "Verification OTP sent to " + request.getEmail());
+            if (!authService.isMailEnabled()) {
+                response.put("devOtpHint", otp);
+            }
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", e.getMessage()));

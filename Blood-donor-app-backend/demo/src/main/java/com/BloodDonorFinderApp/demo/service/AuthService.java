@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -47,16 +48,32 @@ public class AuthService {
     @Transactional
     public LoginResponse login(LoginRequest request) {
 
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+            log.warn("Login failed: empty or null email submitted");
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        /*
+         * Email Normalisation:
+         * We trim leading/trailing whitespace and convert the input to lowercase
+         * using Locale.ROOT. Combined with UserRepository.findByEmailIgnoreCase,
+         * this eliminates login mismatches caused by mobile auto-capitalisation,
+         * accidental trailing whitespace, or case-sensitive database collations.
+         */
+        String normalisedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
+
         User user = userRepository
-                .findByEmail(request.getEmail())
-                .orElseThrow(() ->
-                        new RuntimeException("Invalid email or password")
-                );
+                .findByEmailIgnoreCase(normalisedEmail)
+                .orElseThrow(() -> {
+                    log.warn("Login failed: user not found for email: {}", normalisedEmail);
+                    return new RuntimeException("Invalid email or password");
+                });
 
         if (!passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword()
         )) {
+            log.warn("Login failed: password mismatch for email: {}", normalisedEmail);
             throw new RuntimeException("Invalid email or password");
         }
 
@@ -130,10 +147,15 @@ public class AuthService {
         }
     }
 
+    public boolean isMailEnabled() {
+        return mailEnabled;
+    }
+
     @Transactional
-    public void sendVerificationOtp(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+    public String sendVerificationOtp(String email) {
+        String normalisedEmail = email != null ? email.trim().toLowerCase(Locale.ROOT) : "";
+        User user = userRepository.findByEmailIgnoreCase(normalisedEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + normalisedEmail));
 
         // Generate 6-digit cryptographic OTP
         SecureRandom random = new SecureRandom();
@@ -146,20 +168,23 @@ public class AuthService {
 
         if (mailEnabled) {
             // In a production setup with SMTP configured:
-            log.info("Sending verification email with OTP to {}", email);
+            log.info("Sending verification email with OTP to {}", normalisedEmail);
         } else {
             // Prototype fallback: print clearly to application logs
-            log.warn("[EMAIL VERIFICATION OTP] Simulation: OTP for {} is {} (valid for 10 minutes)", email, otp);
+            log.warn("[EMAIL VERIFICATION OTP] Simulation: OTP for {} is {} (valid for 10 minutes)", normalisedEmail, otp);
             System.out.println("====================================================");
-            System.out.println("[SMARTBLOOD VERIFICATION OTP] For: " + email + " -> OTP: " + otp);
+            System.out.println("[SMARTBLOOD VERIFICATION OTP] For: " + normalisedEmail + " -> OTP: " + otp);
             System.out.println("====================================================");
         }
+
+        return otp;
     }
 
     @Transactional
     public boolean verifyOtp(String email, String otp) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+        String normalisedEmail = email != null ? email.trim().toLowerCase(Locale.ROOT) : "";
+        User user = userRepository.findByEmailIgnoreCase(normalisedEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + normalisedEmail));
 
         if (user.getVerificationOtp() == null || user.getOtpExpiresAt() == null) {
             throw new RuntimeException("No pending verification request found");
